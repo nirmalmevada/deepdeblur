@@ -3,7 +3,8 @@ import os
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-import glob 
+import glob
+import zipfile
 
 from random import random
 from argparse import ArgumentParser
@@ -162,14 +163,13 @@ def normalize(X_train, Y_train, X_test):
     return X_train, Y_train, X_test
     
 def load_normalize():
-    x_train = [image.imread(f) for f in glob.glob('./train_blur/' + "**/*.png", recursive = True)]
-    y_train = [image.imread(f) for f in glob.glob('./train_sharp/' + "**/*.png", recursive = True)]
-    x_test = [image.imread(f) for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
+    x_train = [image.imread(f) for f in glob.glob('./blur' + "**/*.png", recursive = True)]
+    y_train = [image.imread(f) for f in glob.glob('./sharp' + "**/*.png", recursive = True)]
+    x_test = [image.imread(f) for f in glob.glob('./train' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
     X_test = np.asarray(x_test)
     return normalize(X_train, Y_train, X_test)
-    
     
 def load_data(batch_size):
     X_train, Y_train, X_test = load_normalize()
