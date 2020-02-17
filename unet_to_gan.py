@@ -163,9 +163,9 @@ def normalize(X_train, Y_train, X_test):
     return X_train, Y_train, X_test
     
 def load_normalize():
-    x_train = [image.imread(f) for f in glob.glob('./blur' + "**/*.png", recursive = True)]
-    y_train = [image.imread(f) for f in glob.glob('./sharp' + "**/*.png", recursive = True)]
-    x_test = [image.imread(f) for f in glob.glob('./train' + "**/*.png", recursive = True)]
+    x_train = [image.imread(f) for f in glob.glob('./blur/' + "**/*.png", recursive = True)]
+    y_train = [image.imread(f) for f in glob.glob('./sharp/' + "**/*.png", recursive = True)]
+    x_test = [image.imread(f) for f in glob.glob('./train/' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
     X_test = np.asarray(x_test)
