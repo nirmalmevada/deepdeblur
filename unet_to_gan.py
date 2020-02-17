@@ -204,6 +204,7 @@ def train():
                 fake_output = discriminator([x_batch, gen_images], training = True)
                 
                 dis_r_loss, dis_f_loss = discriminator_loss(real_output, fake_output)
+				dis_loss = dis_r_loss + dis_f_loss
                 gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
             
             gen_gradients = gen.gradient(gen_loss, generator.trainable_variables)
