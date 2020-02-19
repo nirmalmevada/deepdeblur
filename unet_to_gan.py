@@ -173,6 +173,8 @@ def load_normalize():
     
 def load_data(batch_size):
     X_train, Y_train, X_test = load_normalize()
+    X_train = X_train[0:15000]
+    Y_train = Y_train[0:15000]
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train)).batch(batch_size)
     return train_dataset
 
