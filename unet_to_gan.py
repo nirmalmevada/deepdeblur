@@ -163,13 +163,13 @@ def normalize(X_train, Y_train, X_test):
     return X_train, Y_train, X_test
     
 def load_normalize():
-    x_train = [image.imread(f) for f in glob.glob('./train_blur/' + "**/*.png", recursive = True)]
-    y_train = [image.imread(f) for f in glob.glob('./train_sharp/' + "**/*.png", recursive = True)]
-    x_test = [image.imread(f) for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
+    x_train = [f for f in glob.glob('./train_blur/' + "**/*.png", recursive = True)]
+    y_train = [f for f in glob.glob('./train_sharp/' + "**/*.png", recursive = True)]
+    x_test = [f for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
     X_test = np.asarray(x_test)
-    return normalize(X_train, Y_train, X_test)
+    return X_train, Y_train, X_test
     
 def load_data(batch_size):
     X_train, Y_train, X_test = load_normalize()
@@ -196,6 +196,17 @@ def train():
         start = time.time()
         
         for (x_batch, y_batch) in train_dataset:
+            
+            #print(type(x_batch))
+            x_batch = [image.imread(f) for f in x_batch.numpy()]
+            y_batch = [image.imread(f) for f in y_batch.numpy()]
+            #print(x_batch[0].shape)
+            x_batch = [((x - 127.5) / 127.5) for x in x_batch]
+            y_batch = [((x - 127.5) / 127.5) for x in y_batch]      
+            x_batch = tf.convert_to_tensor(x_batch, dtype=tf.float32)
+            y_batch = tf.convert_to_tensor(y_batch, dtype=tf.float32)
+            #print(type(x_batch))
+            
             with tf.GradientTape() as gen, tf.GradientTape() as dis:
                 
                 gen_images = generator(x_batch, training = True)
@@ -215,7 +226,7 @@ def train():
         
         print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
         log_array.append([epoch, gen_loss, dis_loss])
-        if (epoch + 1) % 3 == 0:
+        if (epoch + 1) % 1 == 0:
             checkpoint.save(fileprefix = checkpoint_prefix)
         
 
