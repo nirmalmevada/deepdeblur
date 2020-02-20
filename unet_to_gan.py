@@ -5,10 +5,11 @@ import time
 import matplotlib.pyplot as plt
 import glob
 import zipfile
+import PIL
 
 from random import random
 from argparse import ArgumentParser
-from matplotlib import *
+from PIL import Image
 from random import random
 from tensorflow.keras import layers
 
@@ -199,15 +200,18 @@ def train():
         
         for (x_batch, y_batch) in train_dataset:
             
-            #print(type(x_batch))
-            x_batch = [image.imread(f) for f in x_batch.numpy()]
-            y_batch = [image.imread(f) for f in y_batch.numpy()]
-            #print(x_batch[0].shape)
+            print(type(x_batch))
+            x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
+            y_batch = [np.asarray(Image.open(f)) for f in y_batch.numpy()]
+            print(x_batch[0].shape)
             x_batch = [((x - 127.5) / 127.5) for x in x_batch]
-            y_batch = [((x - 127.5) / 127.5) for x in y_batch]      
+            y_batch = [((x - 127.5) / 127.5) for x in y_batch]  
+            x_batch = np.asarray(x_batch)
+            y_batch = np.asarray(y_batch)
+            print(type(x_batch))
             x_batch = tf.convert_to_tensor(x_batch, dtype=tf.float32)
             y_batch = tf.convert_to_tensor(y_batch, dtype=tf.float32)
-            #print(type(x_batch))
+            print(type(x_batch))
             
             with tf.GradientTape() as gen, tf.GradientTape() as dis:
                 
