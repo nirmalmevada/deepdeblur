@@ -15,7 +15,7 @@ from tensorflow.keras import layers
 
 #constants
 
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 EPOCHS = 50
 
 
