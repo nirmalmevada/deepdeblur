@@ -15,7 +15,7 @@ from tensorflow.keras import layers
 
 #constants
 
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 EPOCHS = 50
 
 
@@ -164,8 +164,8 @@ def normalize(X_train, Y_train, X_test):
     return X_train, Y_train, X_test
     
 def load_normalize():
-    x_train = [f for f in glob.glob('./train_blur/' + "**/*.png", recursive = True)]
-    y_train = [f for f in glob.glob('./train_sharp/' + "**/*.png", recursive = True)]
+    x_train = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
+    y_train = [f for f in glob.glob('./val_sharp/' + "**/*.png", recursive = True)]
     x_test = [f for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
@@ -174,8 +174,6 @@ def load_normalize():
     
 def load_data(batch_size):
     X_train, Y_train, X_test = load_normalize()
-    X_train = X_train[0:100]
-    Y_train = Y_train[0:100]
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train)).batch(batch_size)
     return train_dataset
 
@@ -200,18 +198,18 @@ def train():
         
         for (x_batch, y_batch) in train_dataset:
             
-            print(type(x_batch))
+            #print(type(x_batch))
             x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
             y_batch = [np.asarray(Image.open(f)) for f in y_batch.numpy()]
-            print(x_batch[0].shape)
+            #print(x_batch[0].shape)
             x_batch = [((x - 127.5) / 127.5) for x in x_batch]
             y_batch = [((x - 127.5) / 127.5) for x in y_batch]  
             x_batch = np.asarray(x_batch)
             y_batch = np.asarray(y_batch)
-            print(type(x_batch))
+            #print(type(x_batch))
             x_batch = tf.convert_to_tensor(x_batch, dtype=tf.float32)
             y_batch = tf.convert_to_tensor(y_batch, dtype=tf.float32)
-            print(type(x_batch))
+            #print(type(x_batch))
             
             with tf.GradientTape() as gen, tf.GradientTape() as dis:
                 
