@@ -233,7 +233,7 @@ def train():
         print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
         log_array.append([epoch, gen_loss, dis_loss])
         if (epoch + 1) % 1 == 0:
-            checkpoint.save(fileprefix = checkpoint_prefix)
+            checkpoint.save(file_prefix = checkpoint_prefix)
         
 
 def load_checkpoint():
