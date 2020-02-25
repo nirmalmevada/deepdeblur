@@ -16,7 +16,7 @@ from tensorflow.keras import layers
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 3
+EPOCHS = 50
 
 
 def generator_model():
@@ -195,7 +195,7 @@ def generator_loss(fake, sharp, dis_f_loss):
 def train():
     for epoch in range(EPOCHS):
         start = time.time()
-        
+        it = 1
         for (x_batch, y_batch) in train_dataset:
             
             #print(type(x_batch))
@@ -227,9 +227,11 @@ def train():
             
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
             discriminator_optimizer.apply_gradients(zip(dis_gradients, discriminator.trainable_variables))
+            log_array.append([it, gen_loss, dis_loss])
+            it += 1
         
-        print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
-        log_array.append([epoch, gen_loss, dis_loss])
+        for i in range(50):
+            print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
         if (epoch + 1) % 1 == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
         
