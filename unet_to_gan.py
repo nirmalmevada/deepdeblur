@@ -16,7 +16,7 @@ from tensorflow.keras import layers
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 50
+EPOCHS = 3
 
 
 def generator_model():
