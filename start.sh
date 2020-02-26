@@ -1,2 +1,2 @@
 mkdir tmp
-python unet_to_gan.py
+python horovod_test.py
