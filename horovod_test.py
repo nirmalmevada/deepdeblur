@@ -12,8 +12,9 @@ if gpus:
     tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
 tf.debugging.set_log_device_placement(True)
 
-(mnist_images, mnist_labels), _ = \
-    tf.keras.datasets.mnist.load_data(path='./mnist.npz')
+mnist_images = np.load("./tmp/train_images.npy")
+mnist_labels = np.load("./tmp/train_labels.npy")
+
 
 dataset = tf.data.Dataset.from_tensor_slices(
     (tf.cast(mnist_images[..., tf.newaxis] / 255.0, tf.float32),
@@ -36,7 +37,7 @@ loss = tf.losses.SparseCategoricalCrossentropy()
 # Horovod: adjust learning rate based on number of GPUs.
 opt = tf.optimizers.Adam(0.001 * hvd.size())
 
-checkpoint_dir = './checkpoints'
+checkpoint_dir = './tmp/checkpoints'
 checkpoint = tf.train.Checkpoint(model=mnist_model, optimizer=opt)
 
 
