@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import horovod.tensorflow as hvd
 
 # Horovod: initialize Horovod.
