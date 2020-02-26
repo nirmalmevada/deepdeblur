@@ -1,15 +1,14 @@
-
 import tensorflow as tf
 import horovod.tensorflow as hvd
 
 # Horovod: initialize Horovod.
 hvd.init()
 
-# Horovod: pin GPU to be used to process local rank (one GPU per process)
-config = tf.ConfigProto()
-config.gpu_options.visible_device_list = str(hvd.local_rank())
 
-tf.enable_eager_execution(config=config)
+# Horovod: pin GPU to be used to process local rank (one GPU per process)
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.visible_device_list = str(hvd.local_rank())
+tf.debugging.set_log_device_placement(True)
 
 mnist_model = tf.keras.Sequential([
 	tf.keras.layers.Conv2D(16, [3, 3], activation='relu'),
@@ -19,7 +18,7 @@ mnist_model = tf.keras.Sequential([
 ])
 
 # Horovod: adjust learning rate based on number of GPUs.
-opt = tf.train.AdamOptimizer(0.001 * hvd.size())
+opt = tf.keras.optimizers.Adam(0.001 * hvd.size())
 
 (mnist_images, mnist_labels), _ = \
 	tf.keras.datasets.mnist.load_data(path='mnist-%d.npz' % hvd.rank())
@@ -31,7 +30,7 @@ dataset = tf.data.Dataset.from_tensor_slices(
 dataset = dataset.repeat().shuffle(1000).batch(32)
 
 checkpoint_dir = './checkpoints'
-step_counter = tf.train.get_or_create_global_step()
+step_counter = tf.compat.v1.train.get_or_create_global_step()
 checkpoint = tf.train.Checkpoint(model=mnist_model, optimizer=opt,
 								 step_counter=step_counter)
 
@@ -40,14 +39,13 @@ for (batch, (images, labels)) in enumerate(
 		dataset.take(20000 // hvd.size())):
 	with tf.GradientTape() as tape:
 		logits = mnist_model(images, training=True)
-		loss_value = tf.losses.sparse_softmax_cross_entropy(labels, logits)
+		loss_value = tf.compat.v1.losses.sparse_softmax_cross_entropy(labels, logits)
 
 	# Horovod: add Horovod Distributed GradientTape.
 	tape = hvd.DistributedGradientTape(tape)
 
 	grads = tape.gradient(loss_value, mnist_model.variables)
-	opt.apply_gradients(zip(grads, mnist_model.variables),
-						global_step=tf.train.get_or_create_global_step())
+	opt.apply_gradients(zip(grads, mnist_model.variables))
 
 	# Horovod: broadcast initial variable states from rank 0 to all other processes.
 	# This is necessary to ensure consistent initialization of all workers when
