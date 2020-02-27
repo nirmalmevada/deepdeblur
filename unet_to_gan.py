@@ -207,7 +207,6 @@ def generator_loss(fake, sharp, dis_f_loss):
     lam3 = 0.5
     return lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
-@tf.function
 def train():
     it = 1
     for epoch in range(EPOCHS):
