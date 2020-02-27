@@ -214,8 +214,8 @@ def train():
         for batch, (x_batch, y_batch) in enumerate(train_dataset.take(3000 // hvd.size())):
             
             #print(type(x_batch))
-            x_batch = [np.asarray(Image.open(f)) for f in x_batch.eval()]
-            y_batch = [np.asarray(Image.open(f)) for f in y_batch.eval()]
+            x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
+            y_batch = [np.asarray(Image.open(f)) for f in y_batch.numpy()]
             #print(x_batch[0].shape)
             x_batch = [((x - 127.5) / 127.5) for x in x_batch]
             y_batch = [((x - 127.5) / 127.5) for x in y_batch]  
