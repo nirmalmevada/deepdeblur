@@ -209,7 +209,7 @@ def generator_loss(fake, sharp, dis_f_loss):
 
 @tf.function
 def train():
-	it = 1
+    it = 1
     for epoch in range(EPOCHS):
         start = time.time()
         for batch, (x_batch, y_batch) in enumerate(train_dataset.take(3000 // hvd.size())):
@@ -238,8 +238,8 @@ def train():
                 dis_loss = dis_r_loss + dis_f_loss
                 gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
             
-			gen_distape = hvd.DistributedGradientTape(gen)
-			dis_distape = hvd.DistributedGradientTape(dis)
+            gen_distape = hvd.DistributedGradientTape(gen)
+            dis_distape = hvd.DistributedGradientTape(dis)
             gen_gradients = gen_distape.gradient(gen_loss, generator.trainable_variables)
             dis_gradients = dis_distape.gradient(dis_loss, discriminator.trainable_variables)
             
@@ -248,9 +248,9 @@ def train():
             log_array.append([it, gen_loss, dis_loss])
             it += 1
         
-		if hvd.rank() == 0:
-			for i in range(50):
-				print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
+        if hvd.rank() == 0:
+            for i in range(50):
+                print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
         if hvd.rank() == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
         
@@ -276,7 +276,7 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 discriminator=discriminator)
 
 #load_checkpoint()
-train()	
+train() 
 np.save('./tmp/log_array.npy', log_array)
 while True:
-	print("***")
+    print("***")
