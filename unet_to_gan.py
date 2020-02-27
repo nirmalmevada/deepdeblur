@@ -31,7 +31,7 @@ tf.debugging.set_log_device_placement(True)
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 50
+EPOCHS = 1
 
 
 def generator_model():
