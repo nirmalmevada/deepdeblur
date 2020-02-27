@@ -6,12 +6,27 @@ import matplotlib.pyplot as plt
 import glob
 import zipfile
 import PIL
+import horovod.tensorflow as hvd
 
 from random import random
 from argparse import ArgumentParser
 from PIL import Image
 from random import random
 from tensorflow.keras import layers
+
+
+hvd.init()
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print("Gpu's for horovod: ")
+print(gpus)
+
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+if gpus:
+    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+tf.debugging.set_log_device_placement(True)
+
 
 #constants
 
@@ -126,28 +141,28 @@ def discriminator_model():
     input1 = layers.Input((720, 1280, 3))
     input2 = layers.Input((720, 1280, 3))
 
-    c11 = layers.Conv2D(128, (3, 3), strides = (2, 2), padding = 'same', input_shape = [720, 1280, 3])(input1)
+    c11 = layers.Conv2D(64, (3, 3), strides = (2, 2), padding = 'same', input_shape = [720, 1280, 3])(input1)
     c11 = layers.LeakyReLU()(c11)
     c11 = layers.Dropout(0.15)(c11)
     
-    c12 = layers.Conv2D(128, (3, 3), strides = (2, 2), padding = 'same', input_shape = [720, 1280, 3])(input2)
+    c12 = layers.Conv2D(64, (3, 3), strides = (2, 2), padding = 'same', input_shape = [720, 1280, 3])(input2)
     c12 = layers.LeakyReLU()(c12)
     c12 = layers.Dropout(0.15)(c12)
     
-    c21 = layers.Conv2D(64, (3, 3), strides = (2, 2), padding = 'same')(c11)
+    c21 = layers.Conv2D(32, (3, 3), strides = (2, 2), padding = 'same')(c11)
     c21 = layers.LeakyReLU()(c21)
     c21 = layers.Dropout(0.15)(c21)
     
-    c22 = layers.Conv2D(64, (3, 3), strides = (2, 2), padding = 'same')(c12)
+    c22 = layers.Conv2D(32, (3, 3), strides = (2, 2), padding = 'same')(c12)
     c22 = layers.LeakyReLU()(c22)
     c22 = layers.Dropout(0.15)(c22)
     
     c3 = layers.concatenate([c21, c22])
-    c3 = layers.Conv2D(32, (3, 3), strides = (2, 2), padding = 'same')(c3)
+    c3 = layers.Conv2D(16, (3, 3), strides = (2, 2), padding = 'same')(c3)
     c3 = layers.LeakyReLU()(c3)
     c3 = layers.Dropout(0.15)(c3)
     
-    c4 = layers.Conv2D(16, (3, 3), strides = (2, 2), padding = 'same')(c3)
+    c4 = layers.Conv2D(8, (3, 3), strides = (2, 2), padding = 'same')(c3)
     c4 = layers.LeakyReLU()(c4)
     c4 = layers.Dropout(0.15)(c4)
     
@@ -174,7 +189,7 @@ def load_normalize():
     
 def load_data(batch_size):
     X_train, Y_train, X_test = load_normalize()
-    train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train)).batch(batch_size)
+    train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train)).repeat().shuffle(3000).batch(batch_size)
     return train_dataset
 
 l1_loss = tf.keras.losses.MeanAbsoluteError()
@@ -192,11 +207,12 @@ def generator_loss(fake, sharp, dis_f_loss):
     lam3 = 0.5
     return lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
+@tf.function
 def train():
+	it = 1
     for epoch in range(EPOCHS):
         start = time.time()
-        it = 1
-        for (x_batch, y_batch) in train_dataset:
+        for batch, (x_batch, y_batch) in enumerate(train_dataset.take(3000 // hvd.size())):
             
             #print(type(x_batch))
             x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
@@ -222,17 +238,20 @@ def train():
                 dis_loss = dis_r_loss + dis_f_loss
                 gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
             
-            gen_gradients = gen.gradient(gen_loss, generator.trainable_variables)
-            dis_gradients = dis.gradient(dis_loss, discriminator.trainable_variables)
+			gen_distape = hvd.DistributedGradientTape(gen)
+			dis_distape = hvd.DistributedGradientTape(dis)
+            gen_gradients = gen_distape.gradient(gen_loss, generator.trainable_variables)
+            dis_gradients = dis_distape.gradient(dis_loss, discriminator.trainable_variables)
             
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
             discriminator_optimizer.apply_gradients(zip(dis_gradients, discriminator.trainable_variables))
             log_array.append([it, gen_loss, dis_loss])
             it += 1
         
-        for i in range(50):
-            print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
-        if (epoch + 1) % 1 == 0:
+		if hvd.rank() == 0:
+			for i in range(50):
+				print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
+        if hvd.rank() == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
         
 
@@ -257,5 +276,7 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 discriminator=discriminator)
 
 #load_checkpoint()
-train()
+train()	
 np.save('./tmp/log_array.npy', log_array)
+while True:
+	print("***")
