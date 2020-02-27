@@ -10,7 +10,7 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 if gpus:
-    tf.config.experimental.set_visible_devices(gpus[hvd.rank()], 'GPU')
+    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
 tf.debugging.set_log_device_placement(True)
 
 mnist_images = np.load("./tmp/train_images.npy")
