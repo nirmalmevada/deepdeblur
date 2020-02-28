@@ -149,20 +149,20 @@ def discriminator_model():
     c12 = layers.LeakyReLU()(c12)
     c12 = layers.Dropout(0.15)(c12)
     
-    c21 = layers.Conv2D(32, (3, 3), strides = (2, 2), padding = 'same')(c11)
+    c21 = layers.Conv2D(16, (3, 3), strides = (2, 2), padding = 'same')(c11)
     c21 = layers.LeakyReLU()(c21)
     c21 = layers.Dropout(0.15)(c21)
     
-    c22 = layers.Conv2D(32, (3, 3), strides = (2, 2), padding = 'same')(c12)
+    c22 = layers.Conv2D(16, (3, 3), strides = (2, 2), padding = 'same')(c12)
     c22 = layers.LeakyReLU()(c22)
     c22 = layers.Dropout(0.15)(c22)
     
     c3 = layers.concatenate([c21, c22])
-    c3 = layers.Conv2D(16, (3, 3), strides = (2, 2), padding = 'same')(c3)
+    c3 = layers.Conv2D(8, (3, 3), strides = (2, 2), padding = 'same')(c3)
     c3 = layers.LeakyReLU()(c3)
     c3 = layers.Dropout(0.15)(c3)
     
-    c4 = layers.Conv2D(8, (3, 3), strides = (2, 2), padding = 'same')(c3)
+    c4 = layers.Conv2D(4, (3, 3), strides = (2, 2), padding = 'same')(c3)
     c4 = layers.LeakyReLU()(c4)
     c4 = layers.Dropout(0.15)(c4)
     
