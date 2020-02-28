@@ -80,7 +80,7 @@ def generator_model():
 
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
     c5 = layers.BatchNormalization()(c5)
-    c5 = layers.Activation('relu')(c5)t
+    c5 = layers.Activation('relu')(c5)
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.Activation('relu')(c5)
