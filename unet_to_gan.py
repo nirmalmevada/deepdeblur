@@ -31,7 +31,7 @@ tf.debugging.set_log_device_placement(True)
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 1
+EPOCHS = 2
 
 
 def generator_model():
@@ -275,7 +275,6 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 discriminator=discriminator)
 
 #load_checkpoint()
-train() 
-np.save('./tmp/log_array.npy', log_array)
-while True:
-    print("***")
+train()
+suffix = int(random()*10000)
+np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
