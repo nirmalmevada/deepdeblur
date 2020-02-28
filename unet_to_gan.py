@@ -80,7 +80,7 @@ def generator_model():
 
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
     c5 = layers.BatchNormalization()(c5)
-    c5 = layers.Activation('relu')(c5)
+    c5 = layers.Activation('relu')(c5)t
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.Activation('relu')(c5)
@@ -181,14 +181,14 @@ def normalize(X_train, Y_train, X_test):
 def load_normalize():
     x_train = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
     y_train = [f for f in glob.glob('./val_sharp/' + "**/*.png", recursive = True)]
-    x_test = [f for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
+    #x_test = [f for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
-    X_test = np.asarray(x_test)
-    return X_train, Y_train, X_test
+    #X_test = np.asarray(x_test)
+    return X_train, Y_train
     
 def load_data(batch_size):
-    X_train, Y_train, X_test = load_normalize()
+    X_train, Y_train = load_normalize()
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train)).repeat().shuffle(3000).batch(batch_size)
     return train_dataset
 
