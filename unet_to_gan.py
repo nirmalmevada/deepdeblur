@@ -198,7 +198,7 @@ cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
 def discriminator_loss(real_output , generated_output):
     real_loss = cross_entropy( (np.random.random((real_output.shape))*0.3 + 0.7) * tf.ones_like(real_output), real_output)
-    fake_loss = cross_entropy( (np.random.random((generated_output.shape))*0.3) * tf.ones_like(real_output) tf.zeros_like(generated_output), generated_output)
+    fake_loss = cross_entropy( (np.random.random((generated_output.shape))*0.3) * tf.zeros_like(generated_output), generated_output)
     return real_loss, fake_loss
 
 def generator_loss(fake, sharp, dis_f_loss):
