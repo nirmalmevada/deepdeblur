@@ -31,7 +31,7 @@ tf.debugging.set_log_device_placement(True)
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 2
+EPOCHS = 50
 
 
 def generator_model():
@@ -198,14 +198,14 @@ cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
 def discriminator_loss(real_output , generated_output):
     real_loss = cross_entropy( (np.random.random((real_output.shape))*0.3 + 0.7) * tf.ones_like(real_output), real_output)
-    fake_loss = cross_entropy( (np.random.random((generated_output.shape))*0.3) * tf.ones_like(real_output) tf.zeros_like(generated_output), generated_output)
+    fake_loss = cross_entropy( (np.random.random((generated_output.shape))*0.3) * tf.zeros_like(generated_output), generated_output)
     return real_loss, fake_loss
 
 def generator_loss(fake, sharp, dis_f_loss):
     lam1 = 0.5
     lam2 = 3
     lam3 = 0.5
-    return lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
+    return l1_loss(fake, sharp), l2_loss(fake, sharp), lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
 def train():
     it = 1
@@ -235,7 +235,7 @@ def train():
                 
                 dis_r_loss, dis_f_loss = discriminator_loss(real_output, fake_output)
                 dis_loss = dis_r_loss + dis_f_loss
-                gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
+                L1, L2, gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
             
             gen_distape = hvd.DistributedGradientTape(gen)
             dis_distape = hvd.DistributedGradientTape(dis)
@@ -244,7 +244,7 @@ def train():
             
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
             discriminator_optimizer.apply_gradients(zip(dis_gradients, discriminator.trainable_variables))
-            log_array.append([it, gen_loss, dis_loss])
+            log_array.append([it, L1, L2, gen_loss, dis_f_loss, dis_loss])
             it += 1
         
         if hvd.rank() == 0:
