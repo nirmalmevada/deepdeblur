@@ -31,7 +31,7 @@ tf.debugging.set_log_device_placement(True)
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 2
+EPOCHS = 50
 
 
 def generator_model():
@@ -202,9 +202,9 @@ def discriminator_loss(real_output , generated_output):
     return real_loss, fake_loss
 
 def generator_loss(fake, sharp, dis_f_loss):
-    lam1 = 0.5
-    lam2 = 3
-    lam3 = 0.5
+    lam1 = 1
+    lam2 = 1
+    lam3 = 10
     return l1_loss(fake, sharp), l2_loss(fake, sharp), lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
 def train():
