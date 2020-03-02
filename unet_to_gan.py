@@ -38,7 +38,7 @@ def generator_model():
     model_in = layers.Input((720, 1280, 3))
     
     #down
-    with tf.device('/gpu:1'):
+    with tf.device('/device:GPU:1'):
         c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(model_in)
         c1 = layers.BatchNormalization()(c1)
         c1 = layers.Activation('relu')(c1)
@@ -79,7 +79,7 @@ def generator_model():
         c4 = layers.BatchNormalization()(c4)
         c4 = layers.Activation('relu')(c4)
         
-    with tf.device('/gpu:2'):
+    with tf.device('/device:GPU:2'):
     
         p4 = layers.MaxPooling2D((2,2))(c4)
         p4 = layers.Dropout(0.1)(p4)
@@ -88,7 +88,7 @@ def generator_model():
         c5 = layers.BatchNormalization()(c5)
         c5 = layers.Activation('relu')(c5)
         
-    with tf.device('/gpu:3'):
+    with tf.device('/device:GPU:3'):
             
         c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
         c5 = layers.BatchNormalization()(c5)
@@ -100,17 +100,17 @@ def generator_model():
         
     
     #up
-    with tf.device('/gpu:4'):
+    with tf.device('/device:GPU:4'):
         u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
         u6 = layers.concatenate([u6, c4])
         u6 = layers.Dropout(0.1)(u6)
     
-    with tf.device('/gpu:5'):
+    with tf.device('/device:GPU:5'):
         c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u6)
         c6 = layers.BatchNormalization()(c6)
         c6 = layers.Activation('relu')(c6)
     
-    with tf.device('/gpu:6'):
+    with tf.device('/device:GPU:6'):
         c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c6)
         c6 = layers.BatchNormalization()(c6)
         c6 = layers.Activation('relu')(c6) 
@@ -157,7 +157,7 @@ def discriminator_model():
     input1 = layers.Input((720, 1280, 3))
     input2 = layers.Input((720, 1280, 3))
 
-    with tf.device('/gpu:7'):
+    with tf.device('/device:GPU:7'):
         c11 = layers.Conv2D(64, (3, 3), strides = (2, 2), padding = 'same', input_shape = [720, 1280, 3])(input1)
         c11 = layers.LeakyReLU()(c11)
         c11 = layers.Dropout(0.15)(c11)
