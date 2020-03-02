@@ -17,7 +17,7 @@ from tensorflow.keras import layers
 
 hvd.init()
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
+gpus = tf.config.experimental.list_physical_devices()
 print("Gpu's for horovod: ")
 print(gpus)
 
