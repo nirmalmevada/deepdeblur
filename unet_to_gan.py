@@ -13,7 +13,7 @@ from argparse import ArgumentParser
 from PIL import Image
 from random import random
 from tensorflow.keras import layers
-
+from deformable_conv import DeformableConvLayer
 
 hvd.init()
 
@@ -31,57 +31,57 @@ tf.debugging.set_log_device_placement(True)
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 150
+EPOCHS = 50
 
 
 def generator_model():
     model_in = layers.Input((720, 1280, 3))
     
-    #down
-    c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(model_in)
+    #down #DepthwiseConv2D - Conv2D - SeparableConv2D
+    c1 = layers.SeparableConv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(model_in)
     c1 = layers.BatchNormalization()(c1)
     c1 = layers.Activation('relu')(c1)
-    c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c1)
+    c1 = layers.SeparableConv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c1)
     c1 = layers.BatchNormalization()(c1)
     c1 = layers.Activation('relu')(c1)
 
     p1 = layers.MaxPooling2D((2,2))(c1)
     p1 = layers.Dropout(0.1)(p1)
 
-    c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p1)
+    c2 = layers.SeparableConv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p1)
     c2 = layers.BatchNormalization()(c2)
     c2 = layers.Activation('relu')(c2)
-    c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c2)
+    c2 = layers.SeparableConv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c2)
     c2 = layers.BatchNormalization()(c2)
     c2 = layers.Activation('relu')(c2)
 
     p2 = layers.MaxPooling2D((2,2))(c2)
     p2 = layers.Dropout(0.1)(p2)
 
-    c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p2)
+    c3 = layers.SeparableConv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p2)
     c3 = layers.BatchNormalization()(c3)
     c3 = layers.Activation('relu')(c3)
-    c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c3)
+    c3 = layers.SeparableConv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c3)
     c3 = layers.BatchNormalization()(c3)
     c3 = layers.Activation('relu')(c3)
 
     p3 = layers.MaxPooling2D((2,2))(c3)
     p3 = layers.Dropout(0.1)(p3)
 
-    c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p3)
+    c4 = layers.SeparableConv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p3)
     c4 = layers.BatchNormalization()(c4)
     c4 = layers.Activation('relu')(c4)
-    c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c4)
+    c4 = layers.SeparableConv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c4)
     c4 = layers.BatchNormalization()(c4)
     c4 = layers.Activation('relu')(c4)
 
     p4 = layers.MaxPooling2D((2,2))(c4)
     p4 = layers.Dropout(0.1)(p4)
 
-    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
+    c5 = layers.SeparableConv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.Activation('relu')(c5)
-    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
+    c5 = layers.SeparableConv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.Activation('relu')(c5)
 
@@ -94,40 +94,40 @@ def generator_model():
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
     u6 = layers.concatenate([u6, c4])
     u6 = layers.Dropout(0.1)(u6)
-    c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u6)
-    c6 = layers.BatchNormalization()(c6)
+    #c6 = DeformableConvLayer(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u6)
+    c6 = layers.BatchNormalization()(u6)
     c6 = layers.Activation('relu')(c6)
-    c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c6)
+    c6 = layers.SeparableConv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c6)
     c6 = layers.BatchNormalization()(c6)
     c6 = layers.Activation('relu')(c6) 
 
     u7 = layers.Conv2DTranspose(64, (2, 2), strides = (2,2), padding = 'same')(c6)
     u7 = layers.concatenate([u7, c3])
     u7 = layers.Dropout(0.1)(u7)
-    c7 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u7)
+    c7 = DeformableConvLayer(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u7)
     c7 = layers.BatchNormalization()(c7)
     c7 = layers.Activation('relu')(c7)
-    c7 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c7)
+    c7 = layers.SeparableConv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c7)
     c7 = layers.BatchNormalization()(c7)
     c7 = layers.Activation('relu')(c7) 
 
     u8 = layers.Conv2DTranspose(32, (2, 2), strides = (2,2), padding = 'same')(c7)
     u8 = layers.concatenate([u8, c2])
     u8 = layers.Dropout(0.1)(u8)
-    c8 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u8)
-    c8 = layers.BatchNormalization()(c8)
+    #c8 = DeformableConvLayer(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u8)
+    c8 = layers.BatchNormalization()(u8)
     c8 = layers.Activation('relu')(c8)
-    c8 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c8)
+    c8 = layers.SeparableConv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c8)
     c8 = layers.BatchNormalization()(c8)
     c8 = layers.Activation('relu')(c8)
 
     u9 = layers.Conv2DTranspose(16, (2, 2), strides = (2,2), padding = 'same')(c8)
     u9 = layers.concatenate([u9, c1])
     u9 = layers.Dropout(0.1)(u9)
-    c9 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u9)
+    c9 = DeformableConvLayer(8, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u9)
     c9 = layers.BatchNormalization()(c9)
     c9 = layers.Activation('relu')(c9)
-    c9 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c9)
+    c9 = layers.SeparableConv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c9)
     c9 = layers.BatchNormalization()(c9)
     c9 = layers.Activation('relu')(c9)
 
@@ -181,10 +181,8 @@ def normalize(X_train, Y_train, X_test):
 def load_normalize():
     x_train = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
     y_train = [f for f in glob.glob('./val_sharp/' + "**/*.png", recursive = True)]
-    #x_test = [f for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
-    #X_test = np.asarray(x_test)
     return X_train, Y_train
     
 def load_data(batch_size):
@@ -202,9 +200,9 @@ def discriminator_loss(real_output , generated_output):
     return real_loss, fake_loss
 
 def generator_loss(fake, sharp, dis_f_loss):
-    lam1 = 1
-    lam2 = 1
-    lam3 = 10
+    lam1 = 0.5
+    lam2 = 0.5
+    lam3 = 1
     return l1_loss(fake, sharp), l2_loss(fake, sharp), lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
 def train():
@@ -213,18 +211,14 @@ def train():
         start = time.time()
         for batch, (x_batch, y_batch) in enumerate(train_dataset.take(3000 // hvd.size())):
             
-            #print(type(x_batch))
             x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
             y_batch = [np.asarray(Image.open(f)) for f in y_batch.numpy()]
-            #print(x_batch[0].shape)
             x_batch = [((x - 127.5) / 127.5) for x in x_batch]
             y_batch = [((x - 127.5) / 127.5) for x in y_batch]  
             x_batch = np.asarray(x_batch)
             y_batch = np.asarray(y_batch)
-            #print(type(x_batch))
             x_batch = tf.convert_to_tensor(x_batch, dtype=tf.float32)
             y_batch = tf.convert_to_tensor(y_batch, dtype=tf.float32)
-            #print(type(x_batch))
             
             with tf.GradientTape() as gen, tf.GradientTape() as dis:
                 
@@ -247,7 +241,7 @@ def train():
             log_array.append([it, L1, L2, gen_loss, dis_f_loss, dis_loss])
             it += 1
         
-        if hvd.rank() == 0:
+        if hvd.rank() == 0 and (epoch + 1)%5 == 0:
             for i in range(50):
                 print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
         if hvd.rank() == 0:
@@ -256,6 +250,24 @@ def train():
 
 def load_checkpoint():
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
+    
+def test():
+    x_name = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
+    x_name = x_name[0:20]
+    x_test = [np.asarray(Image.open(f)) for f in x_name]
+    x_test = [((x - 127.5) / 127.5) for x in x_test]
+    it = 1
+    for x in x_test:
+        inp = tf.convert_to_tensor(x, dtype=tf.float32)
+        inp = tf.expand_dims(inp, 0)
+        out = generator(inp, training = False)
+        out = np.asarray(out)
+        out = out[0,:,:,:]
+        out = Image.fromarray((out*255).astype(np.uint8))
+        out.save('./tmp/'+str(it)+'_out.png')
+        x = Image.fromarray((x*255).astype(np.uint8))
+        x.save('./tmp/'+str(it)+'_inp.png')
+        it += 1
 
 train_dataset = load_data(BATCH_SIZE)
 log_array = []
@@ -274,7 +286,8 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 generator=generator,
                                 discriminator=discriminator)
 
-#load_checkpoint()
+load_checkpoint()
 train()
+test()
 suffix = int(random()*10000)
 np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
