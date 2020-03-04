@@ -85,11 +85,17 @@ def generator_model():
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.Activation('relu')(c5)
 
+    # Removed noise to check
+    # noise = tf.random.normal(tf.shape(c5))
+    # c5 = layers.concatenate([c5, noise])
+    
+    #Self Attention Part
+    cf = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
+    cg = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
+    ch = layers.Conv2D(128,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
+    s = tf.nn.softmax(tf.matmul(ch, cg, transpose_b=True))
+    c5 = tf.matmul(s,cf)
 
-    noise = tf.random.normal(tf.shape(c5))
-    c5 = layers.concatenate([c5, noise])
-    
-    
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
     u6 = layers.concatenate([u6, c4])
