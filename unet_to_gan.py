@@ -35,7 +35,7 @@ EPOCHS = 2
 
 def hw_flatten(x) :
     x_shape = x.get_shape().as_list()
-    return tf.reshape(x, shape=[-1,x_shape[1]*x_shape[2],x_shape[3]])
+    return tf.reshape(x, shape=[-1,x_shape[3]])
 	
 
 def generator_model():
@@ -98,9 +98,7 @@ def generator_model():
     cg = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
     ch = layers.Conv2D(128,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
 
-    cg = tf.transpose(hw_flatten(cg), perm=[0,2,1])
-    s = tf.nn.softmax(tf.matmul(cg, hw_flatten(ch)))
-
+    s = tf.nn.softmax(tf.matmul(hw_flatten(cg), hw_flatten(ch),transpose_a=True))
     o = tf.matmul(hw_flatten(cf),s)
     c5 = tf.reshape(o, shape=tf.shape(c5))   
 
