@@ -33,6 +33,9 @@ tf.debugging.set_log_device_placement(True)
 BATCH_SIZE = 1
 EPOCHS = 2
 
+def hw_flatten(x) :
+    return tf.reshape(x, shape=[x.shape[0], -1 ,x.shape[-1]	])
+	
 
 def generator_model():
     model_in = layers.Input((720, 1280, 3))
@@ -93,8 +96,12 @@ def generator_model():
     cf = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
     cg = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
     ch = layers.Conv2D(128,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
-    s = tf.nn.softmax(tf.matmul(ch, cg, transpose_b=True))
-    c5 = tf.matmul(s,cf)
+    gamma = tf.compat.v1.get_variable("gamma", [1], initializer=tf.constant_initializer(0.0))
+
+    s = tf.nn.softmax(tf.matmul(hw_flatten(ch), hw_flatten(cg), transpose_b=True))
+    o = tf.matmul(s,hw_flatten(cf))
+    o = tf.reshape(o, shape=tf.shape(c5))
+    c5 = o*gamma+c5    
 
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
