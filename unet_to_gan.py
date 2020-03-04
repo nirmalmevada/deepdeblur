@@ -35,7 +35,7 @@ EPOCHS = 2
 
 def hw_flatten(x) :
     x_shape = x.get_shape().as_list()
-    return tf.reshape(x, shape=[x_shape[0], -1 ,x_shape[-1]])
+    return tf.reshape(x, shape=[-1,x_shape[1]*x_shape[2],x_shape[3]])
 	
 
 def generator_model():
@@ -97,12 +97,12 @@ def generator_model():
     cf = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
     cg = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
     ch = layers.Conv2D(128,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
-    gamma = tf.compat.v1.get_variable("gamma", [1], initializer=tf.constant_initializer(0.0))
 
-    s = tf.nn.softmax(tf.matmul(hw_flatten(ch), hw_flatten(cg), transpose_b=True))
-    o = tf.matmul(s,hw_flatten(cf))
-    o = tf.reshape(o, shape=tf.shape(c5))
-    c5 = o*gamma+c5    
+    cg = tf.transpose(hw_flatten(cg), perm=[0,2,1])
+    s = tf.nn.softmax(tf.matmul(cg, hw_flatten(ch)))
+
+    o = tf.matmul(hw_flatten(cf),s)
+    c5 = tf.reshape(o, shape=tf.shape(c5))   
 
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
