@@ -114,7 +114,7 @@ def generator_model():
     u8 = layers.Conv2DTranspose(32, (2, 2), strides = (2,2), padding = 'same')(c7)
     u8 = layers.concatenate([u8, c2])
     u8 = layers.Dropout(0.1)(u8)
-    c8 = layers.SeparableConv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u8)
+    c8 = layers.SeparableConv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u8)
     c8 = layers.BatchNormalization()(c8)
     c8 = layers.Activation('relu')(c8)
     c8 = layers.SeparableConv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c8)
@@ -124,7 +124,7 @@ def generator_model():
     u9 = layers.Conv2DTranspose(16, (2, 2), strides = (2,2), padding = 'same')(c8)
     u9 = layers.concatenate([u9, c1])
     u9 = layers.Dropout(0.1)(u9)
-    c9 = layers.SeparableConv2D(8, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u9)
+    c9 = layers.SeparableConv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u9)
     c9 = layers.BatchNormalization()(c9)
     c9 = layers.Activation('relu')(c9)
     c9 = layers.SeparableConv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c9)
@@ -241,10 +241,11 @@ def train():
             log_array.append([it, L1, L2, gen_loss, dis_f_loss, dis_loss])
             it += 1
         
-        if hvd.rank() == 0 and (epoch + 1)%5 == 0:
+        if hvd.rank() == 0:
             for i in range(50):
                 print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
-        if hvd.rank() == 0:
+        
+        if hvd.rank() == 0 and (epoch + 1)%3 == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
         
 
