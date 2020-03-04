@@ -34,7 +34,8 @@ BATCH_SIZE = 1
 EPOCHS = 2
 
 def hw_flatten(x) :
-    return tf.reshape(x, shape=[x.shape[0], -1 ,x.shape[-1]	])
+    x_shape = x.get_shape().as_list()
+    return tf.reshape(x, shape=[x_shape[0], -1 ,x_shape[-1]])
 	
 
 def generator_model():
