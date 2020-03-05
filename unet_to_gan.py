@@ -56,32 +56,20 @@ def conv(x, channels, kernel=4, stride=2, pad=0, pad_type='zero', use_bias=True,
     return x
 
 def hw_flatten(x) :
-    return tf.reshape(x, shape=[1, -1 ,x.shape[-1]	])
-	
-def flatten(x) :
-    return layers.Flatten(x)
-	
+    return tf.reshape(x, shape=[1, -1 ,x.shape[-1]])
+		
 def attention(x):
-	#x.shape[0] = 1
 	channels = x.shape[-1]
 	print(x.shape)
 	f = conv(x, channels, kernel=1, stride=1 ) 
 	g = conv(x, channels, kernel=1, stride=1) 
 	h = conv(x, channels, kernel=1, stride=1) 
-	s = tf.matmul(hw_flatten(g), hw_flatten(f), transpose_b=True) # # [bs, N, N]
-	print(s.shape)
-
-	beta = tf.nn.softmax(s)  # attention map
-	#print(beta.shape)
+	# attention map
+	beta = tf.nn.softmax(tf.matmul(hw_flatten(g), hw_flatten(f), transpose_b=True)) 
 	o = tf.matmul(beta, hw_flatten(h)) # [bs, N, C]
-	print(o.shape)
 	gamma = tf.compat.v1.get_variable("gamma", [1], initializer=tf.constant_initializer(0.0))
-	#print(gamma.shape)
 	o = tf.reshape(o, shape=tf.shape(x)) # [bs, h, w, C]
-	print(o.shape)
 	final = gamma * o + x
-	print(final.shape)
-	#model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
 	return final
 
 def generator_model():
