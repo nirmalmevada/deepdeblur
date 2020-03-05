@@ -219,6 +219,7 @@ class DeformableConvLayer(Conv2D):
                 for i in [x, y]]  # shape [1, out_h, out_w, filter_h * filter_w]
         return y, x
 
+
     @staticmethod
     def _get_pixel_values_at_point(inputs, indices):
         """get pixel values
@@ -229,7 +230,7 @@ class DeformableConvLayer(Conv2D):
         y, x = indices
         batch, h, w, n = y.get_shape().as_list()[0: 4]
 
-        batch_idx = tf.reshape(tf.range(0, batch), tf.TensorShape([batch, 1, 1, 1]))
-        b = tf.tile(batch_idx, tf.convert_to_tensor([1, h, w, n]))
+        batch_idx = tf.reshape(tf.range(0, batch), tf.convert_to_tensor([-1, 1, 1, 1]))
+        b = tf.tile(batch_idx, tf.convert_to_tensor([1, h, w, -1]))
         pixel_idx = tf.stack([b, y, x], axis=-1)
         return tf.gather_nd(inputs, pixel_idx)
