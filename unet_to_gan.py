@@ -28,7 +28,7 @@ if gpus:
 tf.debugging.set_log_device_placement(True)
 
 
-constants
+#constants
 
 BATCH_SIZE = 1
 EPOCHS = 150
