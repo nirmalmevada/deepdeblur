@@ -229,7 +229,7 @@ class DeformableConvLayer(Conv2D):
         y, x = indices
         batch, h, w, n = y.get_shape().as_list()[0: 4]
 
-        batch_idx = tf.reshape(tf.range(0, batch), tf.convert_to_tensor([-1, 1, 1, 1]))
-        b = tf.tile(batch_idx, tf.convert_to_tensor([1, h, w, -1]))
+        batch_idx = tf.reshape(tf.range(0, batch), tf.convert_to_tensor([batch, 1, 1, 1]))
+        b = tf.tile(batch_idx, tf.convert_to_tensor([1, h, w, n]))
         pixel_idx = tf.stack([b, y, x], axis=-1)
         return tf.gather_nd(inputs, pixel_idx)
