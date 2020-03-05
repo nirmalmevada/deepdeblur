@@ -280,6 +280,7 @@ parser = build_parser()
 options = parser.parse_args()
 EPOCHS = options.epochs
 
+print("Epochs are: ", EPOCHS)
 train_dataset = load_data(BATCH_SIZE)
 log_array = []
 
