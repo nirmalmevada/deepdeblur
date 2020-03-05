@@ -15,20 +15,20 @@ from random import random
 from tensorflow.keras import layers
 from deformable_conv import DeformableConvLayer
 
-# hvd.init()
+hvd.init()
 
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# print("Gpu's for horovod: ")
-# print(gpus)
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print("Gpu's for horovod: ")
+print(gpus)
 
-# for gpu in gpus:
-    # tf.config.experimental.set_memory_growth(gpu, True)
-# if gpus:
-    # tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
-# tf.debugging.set_log_device_placement(True)
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+if gpus:
+    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+tf.debugging.set_log_device_placement(True)
 
 
-#constants
+constants
 
 BATCH_SIZE = 1
 EPOCHS = 150
@@ -205,7 +205,7 @@ def generator_loss(fake, sharp, dis_f_loss):
     lam3 = 1
     return l1_loss(fake, sharp), l2_loss(fake, sharp), lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
-# def train():
+def train():
     it = 1
     for epoch in range(EPOCHS):
         start = time.time()
@@ -287,7 +287,7 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 discriminator=discriminator)
 
 load_checkpoint()
-# train()
+train()
 test()
 suffix = int(random()*10000)
 np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
