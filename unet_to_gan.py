@@ -99,9 +99,14 @@ def generator_model():
     ch = layers.Conv2D(128,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
 
     s = tf.nn.softmax(tf.matmul(hw_flatten(cg), hw_flatten(ch),transpose_a=True))
+    print("shape of s:")
+    print(tf.shape(s))
     o = tf.matmul(hw_flatten(cf),s)
+    print("shape of o:")
+    print(tf.shape(o))
     c5 = tf.reshape(o, shape=tf.shape(c5))   
-
+    print("shape of c5:")
+    print(tf.shape(c5))
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
     u6 = layers.concatenate([u6, c4])
