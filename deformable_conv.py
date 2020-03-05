@@ -122,7 +122,7 @@ class DeformableConvLayer(Conv2D):
         y, x = self._get_conv_indices([in_h, in_w])
         y, x = [tf.expand_dims(i, axis=-1) for i in [y, x]]
         y, x = [tf.tile(i, [batch_size, 1, 1, 1, self.num_deformable_group]) for i in [y, x]]
-        y, x = [tf.reshape(i, [-1, *i.shape[1 : 3], -1]) for i in [y, x]]
+        y, x = [tf.reshape(i, [batch_size, *i.shape[1 : 3], -1]) for i in [y, x]]
         y, x = [tf.cast(i,dtype = tf.float32) for i in [y, x]]
 
         # add offset
