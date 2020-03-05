@@ -33,37 +33,15 @@ tf.debugging.set_log_device_placement(True)
 BATCH_SIZE = 1
 EPOCHS = 2
 
-def conv(x, channels, kernel=4, stride=2, pad=0, pad_type='zero', use_bias=True, sn=False, scope='conv_0'):
-    if pad > 0:
-        h = x.get_shape().as_list()[1]
-        if h % stride == 0:
-            pad = pad * 2
-        else:
-            pad = max(kernel - (h % stride), 0)
-
-        pad_top = pad // 2
-        pad_bottom = pad - pad_top
-        pad_left = pad // 2
-        pad_right = pad - pad_left
-
-        if pad_type == 'zero':
-            x = tf.pad(x, [[0, 0], [pad_top, pad_bottom], [pad_left, pad_right], [0, 0]])
-        if pad_type == 'reflect':
-            x = tf.pad(x, [[0, 0], [pad_top, pad_bottom], [pad_left, pad_right], [0, 0]], mode='REFLECT')
-
-        
-    x = layers.Conv2D( filters=channels, kernel_size=kernel, strides=stride, use_bias=use_bias)(x)
-    return x
 
 def hw_flatten(x) :
     return tf.reshape(x, shape=[1, -1 ,x.shape[-1]])
 		
 def attention(x):
 	channels = x.shape[-1]
-	print(x.shape)
-	f = conv(x, channels, kernel=1, stride=1 ) 
-	g = conv(x, channels, kernel=1, stride=1) 
-	h = conv(x, channels, kernel=1, stride=1) 
+	f = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x) 
+	g = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
+	h = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
 	# attention map
 	beta = tf.nn.softmax(tf.matmul(hw_flatten(g), hw_flatten(f), transpose_b=True)) 
 	o = tf.matmul(beta, hw_flatten(h)) # [bs, N, C]
