@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import glob
 import zipfile
 import PIL
-# import horovod.tensorflow as hvd
+import horovod.tensorflow as hvd
 
 from random import random
 from argparse import ArgumentParser
