@@ -34,9 +34,30 @@ BATCH_SIZE = 1
 EPOCHS = 2
 
 def hw_flatten(x) :
-    x_shape = x.get_shape().as_list()
-    return tf.reshape(x, shape=[-1,x_shape[3]])
-	
+    return tf.reshape(x, shape=[1, -1 ,x.shape[-1]])
+		
+def attention(x):
+	#x.shape[0] = 1
+	channels = x.shape[-1]
+	print(x.shape)
+	f = layers.Conv2D(channels/8, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
+	g = layers.Conv2D(channels/8, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
+	h = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
+	s = tf.matmul(hw_flatten(g), hw_flatten(h), transpose_a=True) # # [bs, N, N]
+	print(s.shape)
+
+	beta = tf.nn.softmax(s)  # attention map
+	#print(beta.shape)
+	o = tf.matmul(beta, hw_flatten(f)) # [bs, N, C]
+	print(o.shape)
+	gamma = tf.compat.v1.get_variable("gamma", [1], initializer=tf.constant_initializer(0.0))
+	#print(gamma.shape)
+	o = tf.reshape(o, shape=tf.shape(x)) # [bs, h, w, C]
+	print(o.shape)
+	final = gamma * o + x
+	print(final.shape)
+	#model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
+	return final
 
 def generator_model():
     model_in = layers.Input((720, 1280, 3))
@@ -94,19 +115,8 @@ def generator_model():
     # c5 = layers.concatenate([c5, noise])
     
     #Self Attention Part
-    cf = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
-    cg = layers.Conv2D(16,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
-    ch = layers.Conv2D(128,(1,1),kernel_initializer = 'he_normal', padding = 'same')(c5)
+    c5 = attention(c5)
 
-    s = tf.nn.softmax(tf.matmul(hw_flatten(cg), hw_flatten(ch),transpose_a=True))
-    print("shape of s:")
-    print(tf.shape(s).as_list())
-    o = tf.matmul(hw_flatten(cf),s)
-    print("shape of o:")
-    print(tf.shape(o).as_list())
-    c5 = tf.reshape(o, shape=tf.shape(c5))   
-    print("shape of c5:")
-    print(tf.shape(c5).as_list())
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
     u6 = layers.concatenate([u6, c4])
