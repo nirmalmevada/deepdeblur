@@ -60,50 +60,50 @@ def generator_model():
     #down
     c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(model_in)
     c1 = layers.BatchNormalization()(c1)
-    c1 = layers.Activation('relu')(c1)
+    c1 = layers.LeakyReLU()(c1)
     c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c1)
     c1 = layers.BatchNormalization()(c1)
-    c1 = layers.Activation('relu')(c1)
+    c1 = layers.LeakyReLU()(c1)
 
     p1 = layers.MaxPooling2D((2,2))(c1)
     p1 = layers.Dropout(0.1)(p1)
 
     c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p1)
     c2 = layers.BatchNormalization()(c2)
-    c2 = layers.Activation('relu')(c2)
+    c2 = layers.LeakyReLU()(c2)
     c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c2)
     c2 = layers.BatchNormalization()(c2)
-    c2 = layers.Activation('relu')(c2)
+    c2 = layers.LeakyReLU()(c2)
 
     p2 = layers.MaxPooling2D((2,2))(c2)
     p2 = layers.Dropout(0.1)(p2)
 
     c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p2)
     c3 = layers.BatchNormalization()(c3)
-    c3 = layers.Activation('relu')(c3)
+    c3 = layers.LeakyReLU()(c3)
     c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c3)
     c3 = layers.BatchNormalization()(c3)
-    c3 = layers.Activation('relu')(c3)
+    c3 = layers.LeakyReLU()(c3)
 
     p3 = layers.MaxPooling2D((2,2))(c3)
     p3 = layers.Dropout(0.1)(p3)
 
     c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p3)
     c4 = layers.BatchNormalization()(c4)
-    c4 = layers.Activation('relu')(c4)
+    c4 = layers.LeakyReLU()(c4)
     c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c4)
     c4 = layers.BatchNormalization()(c4)
-    c4 = layers.Activation('relu')(c4)
+    c4 = layers.LeakyReLU()(c4)
 
     p4 = layers.MaxPooling2D((2,2))(c4)
     p4 = layers.Dropout(0.1)(p4)
 
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
     c5 = layers.BatchNormalization()(c5)
-    c5 = layers.Activation('relu')(c5)
+    c5 = layers.LeakyReLU()(c5)
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
     c5 = layers.BatchNormalization()(c5)
-    c5 = layers.Activation('relu')(c5)
+    c5 = layers.LeakyReLU()(c5)
 
     # Removed noise to check
     
@@ -118,42 +118,42 @@ def generator_model():
     u6 = layers.Dropout(0.1)(u6)
     c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u6)
     c6 = layers.BatchNormalization()(c6)
-    c6 = layers.Activation('relu')(c6)
+    c6 = layers.LeakyReLU()(c6)
     c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c6)
     c6 = layers.BatchNormalization()(c6)
-    c6 = layers.Activation('relu')(c6) 
+    c6 = layers.LeakyReLU()(c6) 
 
     u7 = layers.Conv2DTranspose(64, (2, 2), strides = (2,2), padding = 'same')(c6)
     u7 = layers.concatenate([u7, c3])
     u7 = layers.Dropout(0.1)(u7)
     c7 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u7)
     c7 = layers.BatchNormalization()(c7)
-    c7 = layers.Activation('relu')(c7)
+    c7 = layers.LeakyReLU()(c7)
     c7 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c7)
     c7 = layers.BatchNormalization()(c7)
-    c7 = layers.Activation('relu')(c7) 
+    c7 = layers.LeakyReLU()(c7) 
 
     u8 = layers.Conv2DTranspose(32, (2, 2), strides = (2,2), padding = 'same')(c7)
     u8 = layers.concatenate([u8, c2])
     u8 = layers.Dropout(0.1)(u8)
     c8 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u8)
     c8 = layers.BatchNormalization()(c8)
-    c8 = layers.Activation('relu')(c8)
+    c8 = layers.LeakyReLU()(c8)
     c8 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c8)
     c8 = layers.BatchNormalization()(c8)
-    c8 = layers.Activation('relu')(c8)
+    c8 = layers.LeakyReLU()(c8)
 
     u9 = layers.Conv2DTranspose(16, (2, 2), strides = (2,2), padding = 'same')(c8)
     u9 = layers.concatenate([u9, c1])
     u9 = layers.Dropout(0.1)(u9)
     c9 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u9)
     c9 = layers.BatchNormalization()(c9)
-    c9 = layers.Activation('relu')(c9)
+    c9 = layers.LeakyReLU()(c9)
     c9 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c9)
     c9 = layers.BatchNormalization()(c9)
-    c9 = layers.Activation('relu')(c9)
+    c9 = layers.LeakyReLU()(c9)
 
-    model_out = layers.Conv2D(3, (1,1), activation = 'sigmoid')(c9)
+    model_out = layers.Conv2D(3, (1,1), activation = 'tanh')(c9)
     model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
     return model
     
@@ -235,8 +235,8 @@ def train():
             
             x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
             y_batch = [np.asarray(Image.open(f)) for f in y_batch.numpy()]
-            x_batch = [(x / 255) for x in x_batch]
-            y_batch = [(x / 255) for x in y_batch]  
+            x_batch = [((x - 127.5) / 127.5) for x in x_batch]
+            y_batch = [((x - 127.5) / 127.5) for x in y_batch]  
             x_batch = np.asarray(x_batch)
             y_batch = np.asarray(y_batch)
             x_batch = tf.convert_to_tensor(x_batch, dtype=tf.float32)
@@ -274,22 +274,41 @@ def train():
 def load_checkpoint():
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
+def heatmap(image1, image2):
+    finalimage = np.zeros((image1.shape))
+    finalimage[:,:,0] = abs(image1[:,:,0] - image2[:,:,0])
+    finalimage[:,:,1] = abs(image1[:,:,1] - image2[:,:,1])
+    finalimage[:,:,2] = abs(image1[:,:,2] - image2[:,:,2])
+    return finalimage
+
 def test():
     x_name = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
+    y_name = [f for f in glob.glob('./val_sharp/' + "**/*/png", recursive = True)]
     x_name = x_name[0:20]
+    y_name = y_name[0:20]
     x_test = [np.asarray(Image.open(f)) for f in x_name]
-    x_test = [(x / 255) for x in x_test]
+    y_test = [np.asarray(Image.open(f)) for f in y_name]
+    x_test = [((x - 127.5) / 127.5) for x in x_test]
+    y_test = [((x - 127.5) / 127.5) for x in y_test]
     it = 1
-    for x in x_test:
+    for i in range(20):
+        x = x_test[i]
+        y = y_test[i]
         inp = tf.convert_to_tensor(x, dtype=tf.float32)
         inp = tf.expand_dims(inp, 0)
         out = generator(inp, training = False)
         out = np.asarray(out)
         out = out[0,:,:,:]
-        out = Image.fromarray((out*255).astype(np.uint8))
+        heatmapexp = heatmap(x, y)
+        heatmapres = heatmap(x, out)
+        out = Image.fromarray(((out/2 + 1)*255).astype(np.uint8))
         out.save('./tmp/'+str(it)+'_out.png')
-        x = Image.fromarray((x*255).astype(np.uint8))
+        x = Image.fromarray(((x/2 + 1)*255).astype(np.uint8))
         x.save('./tmp/'+str(it)+'_inp.png')
+        heatmapexp = Image.fromarray(((heatmapexp/2 + 1)*255).astype(np.uint8))
+        heatmapexp.save('./tmp/'+str(it)+'_zexp.png')
+        heatmapres = Image.fromarray(((heatmapres/2 + 1)*255).astype(np.uint8))
+        heatmapres.save('./tmp/'+str(it)+'_zres.png')
         it += 1
 
 parser = build_parser()
