@@ -38,7 +38,21 @@ def build_parser():
     parser.add_argument("-e", "--epochs", type = int, dest = 'epochs', help = "Number of epochs", default = EPOCHS)
     return parser
 
-
+def hw_flatten(x) :
+    return tf.reshape(x, shape=[1, -1 ,x.shape[-1]])
+		
+def attention(x):
+	channels = x.shape[-1]
+	f = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x) 
+	g = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
+	h = layers.Conv2D(channels, (1, 1), kernel_initializer = 'he_normal', padding = 'same')(x)
+	# attention map
+	beta = tf.nn.softmax(tf.matmul(hw_flatten(g), hw_flatten(f), transpose_b=True)) 
+	o = tf.matmul(beta, hw_flatten(h)) # [bs, N, C]
+	gamma = tf.compat.v1.get_variable("gamma", [1], initializer=tf.constant_initializer(0.0))
+	o = tf.reshape(o, shape=tf.shape(x)) # [bs, h, w, C]
+	final = gamma * o + x
+	return final
 
 def generator_model():
     model_in = layers.Input((720, 1280, 3))
@@ -92,6 +106,8 @@ def generator_model():
     c5 = layers.Activation('relu')(c5)
 
 
+    #Self Attention
+    c5 = attention(c5)
     noise = tf.random.normal(tf.shape(c5))
     c5 = layers.concatenate([c5, noise])
     
