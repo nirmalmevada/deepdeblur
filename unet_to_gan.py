@@ -275,11 +275,11 @@ def train():
                 expimg = tf.expand_dims(expimg, 0)
                 genimg = tf.expand_dims(genimg, 0)
                
-                psnr_exp = tf.image.psnr(inpimg, expimg, max_val = 255).numpy()[1]
-                psnr_res = tf.image.psnr(inpimg, genimg, max_val = 255).numpy()[1]
+                psnr_exp = tf.image.psnr(inpimg, expimg, max_val = 255).numpy()[0]
+                psnr_res = tf.image.psnr(inpimg, genimg, max_val = 255).numpy()[0]
                 
-                ssim_exp = tf.image.ssim(inpimg, expimg, max_val = 255).numpy()[1]
-                ssim_res = tf.image.ssim(inpimg, genimg, max_val = 255).numpy()[1]
+                ssim_exp = tf.image.ssim(inpimg, expimg, max_val = 255).numpy()[0]
+                ssim_res = tf.image.ssim(inpimg, genimg, max_val = 255).numpy()[0]
             
             gen_distape = hvd.DistributedGradientTape(gen)
             dis_distape = hvd.DistributedGradientTape(dis)
