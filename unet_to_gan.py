@@ -277,8 +277,8 @@ def load_checkpoint():
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
 def heatmap(image1, image2):
-    image1 = (image1 / 2 + 1) * 255
-    image2 = (image2 / 2 + 1) * 255    
+    image1 = (image1 / 2 + 0.5) * 255
+    image2 = (image2 / 2 + 0.5) * 255    
     finalimage = np.zeros((image1.shape))
     finalimage[:,:,0] = abs(image1[:,:,0] - image2[:,:,0])
     finalimage[:,:,1] = abs(image1[:,:,1] - image2[:,:,1])
@@ -307,9 +307,9 @@ def test():
         print("out is: ", out)
         heatmapexp = heatmap(x, y)
         heatmapres = heatmap(x, out)
-        out = Image.fromarray(((out/2 + 1)*255).astype(np.uint8))
+        out = Image.fromarray(((out/2 + 0.5)*255).astype(np.uint8))
         out.save('./tmp/'+str(it)+'_out.png')
-        x = Image.fromarray(((x/2 + 1)*255).astype(np.uint8))
+        x = Image.fromarray(((x/2 + 0.5)*255).astype(np.uint8))
         x.save('./tmp/'+str(it)+'_inp.png')
         heatmapexp = Image.fromarray(heatmapexp.astype(np.uint8))
         heatmapexp.save('./tmp/'+str(it)+'_zexp.png')
