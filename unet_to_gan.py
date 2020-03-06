@@ -31,8 +31,12 @@ tf.debugging.set_log_device_placement(True)
 #constants
 
 BATCH_SIZE = 1
-EPOCHS = 2
+EPOCHS = 3
 
+def build_parser():
+    parser = ArgumentParser()
+    parser.add_argument("-e", "--epochs", type = int, dest = 'epochs', help = "Number of epochs", default = EPOCHS)
+    return parser
 
 def hw_flatten(x) :
     return tf.reshape(x, shape=[1, -1 ,x.shape[-1]])
@@ -102,11 +106,11 @@ def generator_model():
     c5 = layers.Activation('relu')(c5)
 
     # Removed noise to check
-    # noise = tf.random.normal(tf.shape(c5))
-    # c5 = layers.concatenate([c5, noise])
     
     #Self Attention Part
     c5 = attention(c5)
+    noise = tf.random.normal(tf.shape(c5))
+    c5 = layers.concatenate([c5, noise])
 
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
@@ -199,10 +203,8 @@ def normalize(X_train, Y_train, X_test):
 def load_normalize():
     x_train = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
     y_train = [f for f in glob.glob('./val_sharp/' + "**/*.png", recursive = True)]
-    #x_test = [f for f in glob.glob('./test_blur/' + "**/*.png", recursive = True)]
     X_train = np.asarray(x_train)
     Y_train = np.asarray(y_train)
-    #X_test = np.asarray(x_test)
     return X_train, Y_train
     
 def load_data(batch_size):
@@ -231,18 +233,14 @@ def train():
         start = time.time()
         for batch, (x_batch, y_batch) in enumerate(train_dataset.take(3000 // hvd.size())):
             
-            #print(type(x_batch))
             x_batch = [np.asarray(Image.open(f)) for f in x_batch.numpy()]
             y_batch = [np.asarray(Image.open(f)) for f in y_batch.numpy()]
-            #print(x_batch[0].shape)
-            x_batch = [((x - 127.5) / 127.5) for x in x_batch]
-            y_batch = [((x - 127.5) / 127.5) for x in y_batch]  
+            x_batch = [(x / 255) for x in x_batch]
+            y_batch = [(x / 255) for x in y_batch]  
             x_batch = np.asarray(x_batch)
             y_batch = np.asarray(y_batch)
-            #print(type(x_batch))
             x_batch = tf.convert_to_tensor(x_batch, dtype=tf.float32)
             y_batch = tf.convert_to_tensor(y_batch, dtype=tf.float32)
-            #print(type(x_batch))
             
             with tf.GradientTape() as gen, tf.GradientTape() as dis:
                 
@@ -268,13 +266,37 @@ def train():
         if hvd.rank() == 0:
             for i in range(50):
                 print("Epoch: {} Time: {}sec".format(epoch + 1, time.time() - start))
-        if hvd.rank() == 0:
+        
+        if hvd.rank() == 0 and (epoch + 1)%3 == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
         
 
 def load_checkpoint():
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
+def test():
+    x_name = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
+    x_name = x_name[0:20]
+    x_test = [np.asarray(Image.open(f)) for f in x_name]
+    x_test = [(x / 255) for x in x_test]
+    it = 1
+    for x in x_test:
+        inp = tf.convert_to_tensor(x, dtype=tf.float32)
+        inp = tf.expand_dims(inp, 0)
+        out = generator(inp, training = False)
+        out = np.asarray(out)
+        out = out[0,:,:,:]
+        out = Image.fromarray((out*255).astype(np.uint8))
+        out.save('./tmp/'+str(it)+'_out.png')
+        x = Image.fromarray((x*255).astype(np.uint8))
+        x.save('./tmp/'+str(it)+'_inp.png')
+        it += 1
+
+parser = build_parser()
+options = parser.parse_args()
+EPOCHS = options.epochs
+
+print("Epochs are: ", EPOCHS)
 train_dataset = load_data(BATCH_SIZE)
 log_array = []
 
@@ -292,7 +314,7 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 generator=generator,
                                 discriminator=discriminator)
 
-#load_checkpoint()
+load_checkpoint()
 train()
 suffix = int(random()*10000)
 np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
