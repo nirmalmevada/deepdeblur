@@ -305,9 +305,9 @@ def test():
         out.save('./tmp/'+str(it)+'_out.png')
         x = Image.fromarray(((x/2 + 1)*255).astype(np.uint8))
         x.save('./tmp/'+str(it)+'_inp.png')
-        heatmapexp = Image.fromarray(((heatmapexp/2 + 1)*255).astype(np.uint8))
+        heatmapexp = Image.fromarray((heatmapexp*255).astype(np.uint8))
         heatmapexp.save('./tmp/'+str(it)+'_zexp.png')
-        heatmapres = Image.fromarray(((heatmapres/2 + 1)*255).astype(np.uint8))
+        heatmapres = Image.fromarray((heatmapres*255).astype(np.uint8))
         heatmapres.save('./tmp/'+str(it)+'_zres.png')
         it += 1
 
