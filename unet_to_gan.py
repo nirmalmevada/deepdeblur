@@ -316,5 +316,6 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
 
 load_checkpoint()
 train()
+test()
 suffix = int(random()*10000)
 np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
