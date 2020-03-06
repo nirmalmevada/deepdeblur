@@ -254,15 +254,42 @@ def train():
                 dis_r_loss, dis_f_loss = discriminator_loss(real_output, fake_output)
                 dis_loss = dis_r_loss + dis_f_loss
                 L1, L2, gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
+                
+                inpimg = x_batch.numpy()
+                expimg = y_batch.numpy()
+                genimg = gen_images.numpy()
+                
+                inpimg = inpimg[0,:,:,:]
+                expimg = expimg[0,:,:,:]
+                genimg = genimg[0,:,:,:]
+                
+                inpimg = (inpimg / 2 + 0.5)*255
+                expimg = (expimg / 2 + 0.5)*255
+                genimg = (genimg / 2 + 0.5)*255
+                
+                inpimg = tf.convert_to_tensor(inpimg, dtype=tf.uint8)
+                expimg = tf.convert_to_tensor(expimg, dtype=tf.uint8)
+                genimg = tf.convert_to_tensor(genimg, dtype=tf.uint8)
+                
+                inpimg = tf.expand_dims(inpimg, 0)
+                expimg = tf.expand_dims(expimg, 0)
+                genimg = tf.expand_dims(genimg, 0)
+               
+                psnr_exp = tf.image.psnr(inpimg, expimg, max_val = 255).numpy()[1]
+                psnr_res = tf.image.psnr(inpimg, genimg, max_val = 255).numpy()[1]
+                
+                ssim_exp = tf.image.ssim(inpimg, expimg, max_val = 255).numpy()[1]
+                ssim_res = tf.image.ssim(inpimg, genimg, max_val = 255).numpy()[1]
             
             gen_distape = hvd.DistributedGradientTape(gen)
             dis_distape = hvd.DistributedGradientTape(dis)
             gen_gradients = gen_distape.gradient(gen_loss, generator.trainable_variables)
             dis_gradients = dis_distape.gradient(dis_loss, discriminator.trainable_variables)
             
+
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
             discriminator_optimizer.apply_gradients(zip(dis_gradients, discriminator.trainable_variables))
-            log_array.append([it, L1, L2, gen_loss, dis_f_loss, dis_loss])
+            log_array.append([it, L1, L2, gen_loss, dis_f_loss, dis_loss, psnr_exp, psnr_res, ssim_exp, ssim_res])
             it += 1
         
         if hvd.rank() == 0:
@@ -306,9 +333,11 @@ def test():
         out = out[0,:,:,:]
         print("out is: ", out)
         heatmapexp = heatmap(x, y)
-        heatmapres = heatmap(x, out)
+        heatmapres = heatmap(x, out)    
+        y = Image.fromarray(((y/2 + 0.5)*255).astype(np.uint8))
+        y.save('./tmp/'+str(it)+'_exp.png')
         out = Image.fromarray(((out/2 + 0.5)*255).astype(np.uint8))
-        out.save('./tmp/'+str(it)+'_out.png')
+        out.save('./tmp/'+str(it)+'_res.png')
         x = Image.fromarray(((x/2 + 0.5)*255).astype(np.uint8))
         x.save('./tmp/'+str(it)+'_inp.png')
         heatmapexp = Image.fromarray(heatmapexp.astype(np.uint8))
