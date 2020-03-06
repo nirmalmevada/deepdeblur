@@ -285,7 +285,7 @@ def heatmap(image1, image2):
 
 def test():
     x_name = [f for f in glob.glob('./val_blur/' + "**/*.png", recursive = True)]
-    y_name = [f for f in glob.glob('./val_sharp/' + "**/*/png", recursive = True)]
+    y_name = [f for f in glob.glob('./val_sharp/' + "**/*.png", recursive = True)]
     x_name = x_name[0:20]
     y_name = y_name[0:20]
     x_test = [np.asarray(Image.open(f)) for f in x_name]
