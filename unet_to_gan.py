@@ -26,8 +26,8 @@ for gpu in gpus:
 if gpus:
     tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     
-#toprintlogs
-#tf.debugging.set_log_device_placement(True)
+toprintlogs
+tf.debugging.set_log_device_placement(True)
 
 
 #constants
@@ -41,212 +41,143 @@ def tf_flatten(a):
 
 
 def tf_repeat(a, repeats, axis=0):
-    """TensorFlow version of np.repeat for 1D"""
-    # https://github.com/tensorflow/tensorflow/issues/8521
-    assert len(a.get_shape()) == 1
-
     a = tf.expand_dims(a, -1)
     a = tf.tile(a, [1, repeats])
     a = tf_flatten(a)
     return a
 
 
-def tf_repeat_2d(a, repeats):
-    """Tensorflow version of np.repeat for 2D"""
-
-    assert len(a.get_shape()) == 2
-    a = tf.expand_dims(a, 0)
-    a = tf.tile(a, [repeats, 1, 1])
-    return a
-
-
-def tf_map_coordinates(input, coords, order=1):
-    """Tensorflow verion of scipy.ndimage.map_coordinates
-    Note that coords is transposed and only 2D is supported
-    Parameters
-    ----------
-    input : tf.Tensor. shape = (s, s)
-    coords : tf.Tensor. shape = (n_points, 2)
+def tf_map_coordinates(input, coords):
     """
-
-    assert order == 1
-
-    coords_lt = tf.cast(tf.floor(coords), 'int32')
-    coords_rb = tf.cast(tf.ceil(coords), 'int32')
-    coords_lb = tf.stack([coords_lt[:, 0], coords_rb[:, 1]], axis=1)
-    coords_rt = tf.stack([coords_rb[:, 0], coords_lt[:, 1]], axis=1)
-
-    vals_lt = tf.gather_nd(input, coords_lt)
-    vals_rb = tf.gather_nd(input, coords_rb)
-    vals_lb = tf.gather_nd(input, coords_lb)
-    vals_rt = tf.gather_nd(input, coords_rt)
-
-    coords_offset_lt = coords - tf.cast(coords_lt, 'float32')
-    vals_t = vals_lt + (vals_rt - vals_lt) * coords_offset_lt[:, 0]
-    vals_b = vals_lb + (vals_rb - vals_lb) * coords_offset_lt[:, 0]
-    mapped_vals = vals_t + (vals_b - vals_t) * coords_offset_lt[:, 1]
-
+    :param input: tf.Tensor. shape=(h, w)
+    :param coords: tf.Tensor. shape = (n_points, 2)
+    :return:
+    """
+    coords_tl = tf.cast(tf.floor(coords), tf.int32)
+    coords_br = tf.cast(tf.ceil(coords), tf.int32)
+    coords_bl = tf.stack([coords_br[:, 0], coords_tl[:, 1]], axis=1)
+    coords_tr = tf.stack([coords_tl[:, 0], coords_br[:, 1]], axis=1)
+    vals_tl = tf.gather_nd(input, coords_tl)
+    vals_br = tf.gather_nd(input, coords_br)
+    vals_bl = tf.gather_nd(input, coords_bl)
+    vals_tr = tf.gather_nd(input, coords_tr)
+    coords_offset_tl = coords - tf.cast(coords_tl, tf.float32)
+    vals_t = vals_tl + (vals_tr - vals_tl) * coords_offset_tl[:, 1]
+    vals_b = vals_bl + (vals_br - vals_bl) * coords_offset_tl[:, 1]
+    mapped_vals = vals_t + (vals_b - vals_t) * coords_offset_tl[:, 0]
     return mapped_vals
 
 
-
-def tf_batch_map_coordinates(input, coords, order=1):
-    """Batch version of tf_map_coordinates
-    Only supports 2D feature maps
-    Parameters
-    ----------
-    input : tf.Tensor. shape = (b, s, s)
-    coords : tf.Tensor. shape = (b, n_points, 2)
-    Returns
-    -------
-    tf.Tensor. shape = (b, s, s)
+def tf_batch_map_coordinates(input, coords):
     """
-
+    Batch version of tf_map_coordinates
+    :param input: tf.Tensor. shape = (b, h, w)
+    :param coords: tf.Tensor. shape = (b, n_points, 2)
+    :return:
+    """
     input_shape = tf.shape(input)
     batch_size = input_shape[0]
-    input_size = input_shape[1]
+    input_size_h = input_shape[1]
+    input_size_w = input_shape[2]
     n_coords = tf.shape(coords)[1]
-
-    coords = tf.clip_by_value(coords, 0, tf.cast(input_size, 'float32') - 1)
-    coords_lt = tf.cast(tf.floor(coords), 'int32')
-    coords_rb = tf.cast(tf.math.ceil(coords), 'int32')
-    coords_lb = tf.stack([coords_lt[..., 0], coords_rb[..., 1]], axis=-1)
-    coords_rt = tf.stack([coords_rb[..., 0], coords_lt[..., 1]], axis=-1)
-
+    coords_w = tf.clip_by_value(coords[..., 1], 0, tf.cast(input_size_w, tf.float32) - 1)
+    coords_h = tf.clip_by_value(coords[..., 0], 0, tf.cast(input_size_h, tf.float32) - 1)
+    coords = tf.stack([coords_h, coords_w], axis=-1)
+    coords_tl = tf.cast(tf.floor(coords), tf.int32)
+    coords_br = tf.cast(tf.math.ceil(coords), tf.int32)
+    coords_bl = tf.stack([coords_br[..., 0], coords_tl[..., 1]], axis=-1)
+    coords_tr = tf.stack([coords_tl[..., 0], coords_br[..., 1]], axis=-1)
     idx = tf_repeat(tf.range(batch_size), n_coords)
-
     def _get_vals_by_coords(input, coords):
-        indices = tf.stack([
-            idx, tf_flatten(coords[..., 0]), tf_flatten(coords[..., 1])
-        ], axis=-1)
+        indices = tf.stack([idx, tf_flatten(coords[..., 0]), tf_flatten(coords[..., 1])], axis=-1)
         vals = tf.gather_nd(input, indices)
         vals = tf.reshape(vals, (batch_size, n_coords))
         return vals
 
-    vals_lt = _get_vals_by_coords(input, coords_lt)
-    vals_rb = _get_vals_by_coords(input, coords_rb)
-    vals_lb = _get_vals_by_coords(input, coords_lb)
-    vals_rt = _get_vals_by_coords(input, coords_rt)
+    vals_tl = _get_vals_by_coords(input, coords_tl)
+    vals_br = _get_vals_by_coords(input, coords_br)
+    vals_bl = _get_vals_by_coords(input, coords_bl)
+    vals_tr = _get_vals_by_coords(input, coords_tr)
 
-    coords_offset_lt = coords - tf.cast(coords_lt, 'float32')
-    vals_t = vals_lt + (vals_rt - vals_lt) * coords_offset_lt[..., 0]
-    vals_b = vals_lb + (vals_rb - vals_lb) * coords_offset_lt[..., 0]
-    mapped_vals = vals_t + (vals_b - vals_t) * coords_offset_lt[..., 1]
+    coords_offset_tl = coords - tf.cast(coords_tl, 'float32')
+    vals_t = vals_tl + (vals_tr - vals_tl) * coords_offset_tl[..., 1]
+    vals_b = vals_bl + (vals_br - vals_bl) * coords_offset_tl[..., 1]
+    mapped_vals = vals_t + (vals_b - vals_t) * coords_offset_tl[..., 0]
 
     return mapped_vals
 
-def tf_batch_map_offsets(input, offsets, order=1):
-    """Batch map offsets into input
-    Parameters
-    ---------
-    input : tf.Tensor. shape = (b, s, s)
-    offsets: tf.Tensor. shape = (b, s, s, 2)
-    Returns
-    -------
-    tf.Tensor. shape = (b, s, s)
-    """
 
+def tf_batch_map_offsets(input, offsets):
+    """
+    :param input: tf.Tensor, shape=(b, h, w)
+    :param offsets: tf.Tensor, shape=(b, h, w, 2)
+    :return:
+    """
     input_shape = tf.shape(input)
     batch_size = input_shape[0]
-    input_size = input_shape[1]
-    print("input_size:" , input_size)
-
+    input_size_h = input_shape[1]
+    input_size_w = input_shape[2]
     offsets = tf.reshape(offsets, (batch_size, -1, 2))
-    print("offsets: ", offsets)
-    grid = tf.meshgrid(
-        tf.range(input_size), tf.range(input_size), indexing='ij'
-    )
-    print("grid: ", grid)
-    grid = tf.stack(grid, axis=-1)
-    print("grid : ", grid)
-    grid = tf.cast(grid, 'float32')
-    print("grid : ", grid)
+    grid_x, grid_y = tf.meshgrid(tf.range(input_size_w), tf.range(input_size_h))
+    grid = tf.stack([grid_y, grid_x], axis=-1)
+    grid = tf.cast(grid, tf.float32)
     grid = tf.reshape(grid, (-1, 2))
-    print("grid : ", grid)
-    grid = tf_repeat_2d(grid, batch_size)
-    print("grid : ", grid)
-    
+    grid = tf.expand_dims(grid, axis=0)
+    grid = tf.tile(grid, multiples=[batch_size, 1, 1])
     coords = offsets + grid
-
     mapped_vals = tf_batch_map_coordinates(input, coords)
     return mapped_vals
 
-class ConvOffset2D(layers.Conv2D):
-    """ConvOffset2D
-    Convolutional layer responsible for learning the 2D offsets and output the
-    deformed feature map using bilinear interpolation
-    Note that this layer does not perform convolution on the deformed feature
-    map. See get_deform_cnn in cnn.py for usage
-    """
-
-    def __init__(self, filters, init_normal_stddev=0.01, **kwargs):
-        """Init
-        Parameters
-        ----------
-        filters : int
-            Number of channel of the input feature map
-        init_normal_stddev : float
-            Normal kernel initialization
-        **kwargs:
-            Pass to superclass. See Con2D layer in Keras
-        """
-
+class DeformableConv2D(object):
+    def __init__(self, filters, use_seperate_conv=True, **kwargs):
         self.filters = filters
-        super(ConvOffset2D, self).__init__(
-            self.filters * 2, (3, 3), padding='same', use_bias=False,
-            kernel_initializer=tf.keras.initializers.RandomNormal(0, init_normal_stddev),
-            **kwargs
-        )
+        if use_seperate_conv:
+            self.offset_conv = layers.SeparableConv2D(filters=filters * 2, kernel_size=(3, 3), padding='same',
+                                                   use_bias=False)
+            self.weight_conv = layers.SeparableConv2D(filters=filters, kernel_size=(3, 3), padding="same",
+                                                   use_bias=False, activation=tf.nn.sigmoid)
+        else:
+            self.offset_conv = layers.Conv2D(filters=filters*2, kernel_size=(3, 3), padding='same',
+                                                   use_bias=False)
+            self.weight_conv = layers.Conv2D(filters=filters, kernel_size=(3, 3), padding="same",
+                                                   use_bias=False, activation=tf.nn.sigmoid)
 
-    def call(self, x):
-        """Return the deformed featured map"""
-        x_shape = x.get_shape()
-        offsets = super(ConvOffset2D, self).call(x)
-
-        print(offsets)
-        # offsets: (b*c, h, w, 2)
-        offsets = self._to_bc_h_w_2(offsets, x_shape)
-        print(offsets)
-        
-        # x: (b*c, h, w)
-        print(x)
+    def __call__(self, x):
+        offsets = self.offset_conv(x)
+        weights = self.weight_conv(x)
+        x_shape = tf.shape(x)
+        x_shape_list = x.get_shape().as_list()
         x = self._to_bc_h_w(x, x_shape)
-        print(x)
-
-        # X_offset: (b*c, h, w)
+        offsets = self._to_bc_h_w_2(offsets, x_shape)
+        weights = self._to_bc_h_w(weights, x_shape)
         x_offset = tf_batch_map_offsets(x, offsets)
-
-        # x_offset: (b, h, w, c)
+        weights = tf.expand_dims(weights, axis=1)
+        weights = self._to_b_h_w_c(weights, x_shape)
         x_offset = self._to_b_h_w_c(x_offset, x_shape)
-
+        x_offset = tf.multiply(x_offset, weights)
+        x_offset.set_shape(x_shape_list)
         return x_offset
-
-    def compute_output_shape(self, input_shape):
-        """Output shape is the same as input shape
-        Because this layer does only the deformation part
-        """
-        return input_shape
 
     @staticmethod
     def _to_bc_h_w_2(x, x_shape):
         """(b, h, w, 2c) -> (b*c, h, w, 2)"""
         x = tf.transpose(x, [0, 3, 1, 2])
-        x = tf.reshape(x, (-1, int(x_shape[1]), int(x_shape[2]), 2))
+        x = tf.reshape(x, [x_shape[0], x_shape[3], 2, x_shape[1], x_shape[2]])
+        x = tf.transpose(x, [0, 1, 3, 4, 2])
+        x = tf.reshape(x, [-1, x_shape[1], x_shape[2], 2])
         return x
 
     @staticmethod
     def _to_bc_h_w(x, x_shape):
         """(b, h, w, c) -> (b*c, h, w)"""
         x = tf.transpose(x, [0, 3, 1, 2])
-        x = tf.reshape(x, (-1, int(x_shape[1]), int(x_shape[2])))
+        x = tf.reshape(x, [-1, x_shape[1], x_shape[2]])
         return x
 
     @staticmethod
     def _to_b_h_w_c(x, x_shape):
         """(b*c, h, w) -> (b, h, w, c)"""
-        x = tf.reshape(
-            x, (-1, int(x_shape[3]), int(x_shape[1]), int(x_shape[2]))
-        )
+        x = tf.reshape(x, (-1, x_shape[3], x_shape[1], x_shape[2]))
         x = tf.transpose(x, [0, 2, 3, 1])
         return x
 
@@ -333,7 +264,7 @@ def generator_model():
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
     u6 = layers.concatenate([u6, c4])
     u6 = layers.Dropout(0.1)(u6)
-    c6 = ConvOffset2D(128)(u6)
+    c6 = DeformableConv2D(128)(u6)
     c6 = layers.BatchNormalization()(c6)
     c6 = layers.LeakyReLU()(c6)
     c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c6)
