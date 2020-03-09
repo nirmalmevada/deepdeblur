@@ -26,8 +26,8 @@ for gpu in gpus:
 if gpus:
     tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     
-toprintlogs
-tf.debugging.set_log_device_placement(True)
+# toprintlogs
+# tf.debugging.set_log_device_placement(True)
 
 
 #constants
