@@ -47,26 +47,6 @@ def tf_repeat(a, repeats, axis=0):
     return a
 
 
-def tf_map_coordinates(input, coords):
-    """
-    :param input: tf.Tensor. shape=(h, w)
-    :param coords: tf.Tensor. shape = (n_points, 2)
-    :return:
-    """
-    coords_tl = tf.cast(tf.floor(coords), tf.int32)
-    coords_br = tf.cast(tf.ceil(coords), tf.int32)
-    coords_bl = tf.stack([coords_br[:, 0], coords_tl[:, 1]], axis=1)
-    coords_tr = tf.stack([coords_tl[:, 0], coords_br[:, 1]], axis=1)
-    vals_tl = tf.gather_nd(input, coords_tl)
-    vals_br = tf.gather_nd(input, coords_br)
-    vals_bl = tf.gather_nd(input, coords_bl)
-    vals_tr = tf.gather_nd(input, coords_tr)
-    coords_offset_tl = coords - tf.cast(coords_tl, tf.float32)
-    vals_t = vals_tl + (vals_tr - vals_tl) * coords_offset_tl[:, 1]
-    vals_b = vals_bl + (vals_br - vals_bl) * coords_offset_tl[:, 1]
-    mapped_vals = vals_t + (vals_b - vals_t) * coords_offset_tl[:, 0]
-    return mapped_vals
-
 
 def tf_batch_map_coordinates(input, coords):
     """
@@ -83,7 +63,7 @@ def tf_batch_map_coordinates(input, coords):
     coords_w = tf.clip_by_value(coords[..., 1], 0, tf.cast(input_size_w, tf.float32) - 1)
     coords_h = tf.clip_by_value(coords[..., 0], 0, tf.cast(input_size_h, tf.float32) - 1)
     coords = tf.stack([coords_h, coords_w], axis=-1)
-    coords_tl = tf.cast(tf.floor(coords), tf.int32)
+    coords_tl = tf.cast(tf.math.floor(coords), tf.int32)
     coords_br = tf.cast(tf.math.ceil(coords), tf.int32)
     coords_bl = tf.stack([coords_br[..., 0], coords_tl[..., 1]], axis=-1)
     coords_tr = tf.stack([coords_tl[..., 0], coords_br[..., 1]], axis=-1)
@@ -161,24 +141,24 @@ class DeformableConv2D(object):
     @staticmethod
     def _to_bc_h_w_2(x, x_shape):
         """(b, h, w, 2c) -> (b*c, h, w, 2)"""
-        x = tf.transpose(x, [0, 3, 1, 2])
-        x = tf.reshape(x, [x_shape[0], x_shape[3], 2, x_shape[1], x_shape[2]])
-        x = tf.transpose(x, [0, 1, 3, 4, 2])
+        # x = tf.transpose(x, [0, 3, 1, 2])
+        # x = tf.reshape(x, [x_shape[0], x_shape[3], 2, x_shape[1], x_shape[2]])
+        # x = tf.transpose(x, [0, 1, 3, 4, 2])
         x = tf.reshape(x, [-1, x_shape[1], x_shape[2], 2])
         return x
 
     @staticmethod
     def _to_bc_h_w(x, x_shape):
         """(b, h, w, c) -> (b*c, h, w)"""
-        x = tf.transpose(x, [0, 3, 1, 2])
+        # x = tf.transpose(x, [0, 3, 1, 2])
         x = tf.reshape(x, [-1, x_shape[1], x_shape[2]])
         return x
 
     @staticmethod
     def _to_b_h_w_c(x, x_shape):
         """(b*c, h, w) -> (b, h, w, c)"""
-        x = tf.reshape(x, (-1, x_shape[3], x_shape[1], x_shape[2]))
-        x = tf.transpose(x, [0, 2, 3, 1])
+        x = tf.reshape(x, (-1, x_shape[1], x_shape[2], x_shape[3]))
+        # x = tf.transpose(x, [0, 2, 3, 1])
         return x
 
 def build_parser():
