@@ -149,15 +149,23 @@ def tf_batch_map_offsets(input, offsets, order=1):
     input_shape = tf.shape(input)
     batch_size = input_shape[0]
     input_size = input_shape[1]
+    print("input_size:" , input_size)
 
     offsets = tf.reshape(offsets, (batch_size, -1, 2))
+    print("offsets: ", offsets)
     grid = tf.meshgrid(
         tf.range(input_size), tf.range(input_size), indexing='ij'
     )
+    print("grid: ", grid)
     grid = tf.stack(grid, axis=-1)
+    print("grid : ", grid)
     grid = tf.cast(grid, 'float32')
+    print("grid : ", grid)
     grid = tf.reshape(grid, (-1, 2))
+    print("grid : ", grid)
     grid = tf_repeat_2d(grid, batch_size)
+    print("grid : ", grid)
+    
     coords = offsets + grid
 
     mapped_vals = tf_batch_map_coordinates(input, coords)
@@ -195,11 +203,15 @@ class ConvOffset2D(layers.Conv2D):
         x_shape = x.get_shape()
         offsets = super(ConvOffset2D, self).call(x)
 
+        print(offsets)
         # offsets: (b*c, h, w, 2)
         offsets = self._to_bc_h_w_2(offsets, x_shape)
-
+        print(offsets)
+        
         # x: (b*c, h, w)
+        print(x)
         x = self._to_bc_h_w(x, x_shape)
+        print(x)
 
         # X_offset: (b*c, h, w)
         x_offset = tf_batch_map_offsets(x, offsets)
