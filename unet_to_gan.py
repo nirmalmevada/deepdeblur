@@ -59,8 +59,11 @@ def attention(x):
 def generator_model():
     model_in = layers.Input((720, 1280, 3))
     
+    #space to depth
+    s2d = tf.nn.space_to_depth(model_in, 2, data_format='NHWC')
+    
     #down
-    c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(model_in)
+    c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(s2d)
     c1 = layers.BatchNormalization()(c1)
     c1 = layers.LeakyReLU()(c1)
     c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c1)
