@@ -292,7 +292,7 @@ def train():
                 gen_images = generator(x_batch, training = True)
                 
                 real_output = discriminator([x_batch, heatmapwithoutabs(x_batch, y_batch)], training = True)
-                fake_output = discriminator([x_batch, heatmapwithoutabs(x_batch, gen_images)], training = True)
+                fake_output = discriminator([x_batch, gen_images], training = True)
                 
                 dis_r_loss, dis_f_loss = discriminator_loss(real_output, fake_output)
                 dis_loss = dis_r_loss + dis_f_loss
@@ -368,13 +368,12 @@ def test():
     for i in range(20):
         x = x_test[i]
         y = y_test[i]
-        print("x is: ", x)
         inp = tf.convert_to_tensor(x, dtype=tf.float32)
         inp = tf.expand_dims(inp, 0)
         out = generator(inp, training = False)
         out = np.asarray(out)
         out = out[0,:,:,:]
-        print("out is: ", out)
+        out = x - out
         heatmapexp = heatmap(x, y)
         heatmapres = heatmap(x, out)    
         y = Image.fromarray(((y/2 + 0.5)*255).astype(np.uint8))
