@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import glob
 import zipfile
 import PIL
-import horovod.tensorflow as hvd
+# import horovod.tensorflow as hvd
 
 from random import random
 from argparse import ArgumentParser
@@ -15,16 +15,16 @@ from random import random
 from tensorflow.keras import layers
 
 
-hvd.init()
+# hvd.init()
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-print("Gpu's for horovod: ")
-print(gpus)
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# print("Gpu's for horovod: ")
+# print(gpus)
 
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
-if gpus:
-    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+# for gpu in gpus:
+    # tf.config.experimental.set_memory_growth(gpu, True)
+# if gpus:
+    # tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     
 #toprintlogs
 #tf.debugging.set_log_device_placement(True)
@@ -119,7 +119,10 @@ def generator_model():
 
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
-    u6 = layers.concatenate([u6, c4])
+    #padding to match 44 -> 45
+    padded = layers.ZeroPadding2D(padding = ((1,0),(0,0)))(u6)
+    
+    u6 = layers.concatenate([padded, c4])
     u6 = layers.Dropout(0.1)(u6)
     c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u6)
     c6 = layers.BatchNormalization()(c6)
@@ -157,8 +160,32 @@ def generator_model():
     c9 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c9)
     c9 = layers.BatchNormalization()(c9)
     c9 = layers.LeakyReLU()(c9)
+    
+    #depthtospace
+    d2s = tf.nn.depth_to_space(c9, 2, data_format='NHWC')
+    
+    #concat and multiscale upsample downsample
+    d2s = layers.concatenate([d2s, model_in])
+    
+    d2s = layers.Conv2D(3, (1,1), kernel_initializer = 'he_normal', padding = 'same')(d2s)
+    d2s = layers.BatchNormalization()(d2s)
+    d2s = layers.LeakyReLU()(d2s)
+    
+    #maxpool 2 x 4 x 8 x 16 layers
+    max1 = layers.MaxPooling2D((2,2), padding = 'valid')(d2s)
+    max2 = layers.MaxPooling2D((4,4), padding = 'valid')(d2s)
+    max3 = layers.MaxPooling2D((8,8), padding = 'valid')(d2s)
+    max4 = layers.MaxPooling2D((16,16), padding = 'valid')(d2s) 
+    
+    #upsample
+    up1 = layers.UpSampling2D((2,2), interpolation = 'nearest')(max1)
+    up2 = layers.UpSampling2D((4,4), interpolation = 'nearest')(max2)
+    up3 = layers.UpSampling2D((8,8), interpolation = 'nearest')(max3)
+    up4 = layers.UpSampling2D((16,16), interpolation = 'nearest')(max4)
+    
+    concatpool = layers.concatenate([up1, up2, up3, up4])
 
-    model_out = layers.Conv2D(3, (1,1), activation = 'tanh')(c9)
+    model_out = layers.Conv2DTranspose(3, (1,1), activation = 'tanh')(concatpool)
     model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
     return model
     
@@ -232,6 +259,19 @@ def generator_loss(fake, sharp, dis_f_loss):
     lam3 = 1
     return l1_loss(fake, sharp), l2_loss(fake, sharp), lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
 
+def heatmapwithoutabs(image1, image2):
+    image1 = np.asarray(image1)
+    image2 = np.asarray(image2)
+    image1 = image1[0,:,:,:]
+    image2 = image2[0,:,:,:]
+    finalimage = np.zeros((image1.shape))
+    finalimage[:,:,0] = image1[:,:,0] - image2[:,:,0]
+    finalimage[:,:,1] = image1[:,:,1] - image2[:,:,1]
+    finalimage[:,:,2] = image1[:,:,2] - image2[:,:,2]
+    finalimage = tf.convert_to_tensor(finalimage, dtype=tf.float32)
+    finalimage = tf.expand_dims(finalimage, 0)
+    return finalimage
+
 def train():
     it = 1
     for epoch in range(EPOCHS):
@@ -251,8 +291,8 @@ def train():
                 
                 gen_images = generator(x_batch, training = True)
                 
-                real_output = discriminator([x_batch, y_batch], training = True)
-                fake_output = discriminator([x_batch, gen_images], training = True)
+                real_output = discriminator([x_batch, heatmapwithoutabs(x_batch, y_batch)], training = True)
+                fake_output = discriminator([x_batch, heatmapwithoutabs(x_batch, gen_images)], training = True)
                 
                 dis_r_loss, dis_f_loss = discriminator_loss(real_output, fake_output)
                 dis_loss = dis_r_loss + dis_f_loss
@@ -371,8 +411,8 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                 generator=generator,
                                 discriminator=discriminator)
 
-load_checkpoint()
-train()
-test()
-suffix = int(random()*10000)
-np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
+# load_checkpoint()
+# train()
+# test()
+# suffix = int(random()*10000)
+# np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
