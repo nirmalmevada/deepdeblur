@@ -304,7 +304,7 @@ def train():
                 expimg = y_batch.numpy()
                 genimg = gen_images.numpy()
                 if hvd.rank() == 0:
-                    print("gen_imgs max:" , max(genimg))
+                    print("gen_imgs max:" , np.amax(genimg))
                 genimg = inpimg - 2 * genimg
                 
                 inpimg = inpimg[0,:,:,:]
@@ -419,7 +419,7 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
 
 load_checkpoint()
 train()
-if hvd.rank == 0:
+if hvd.rank() == 0:
     test()
 suffix = int(random()*10000)
 np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
