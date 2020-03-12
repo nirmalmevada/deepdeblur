@@ -303,6 +303,8 @@ def train():
                 inpimg = x_batch.numpy()
                 expimg = y_batch.numpy()
                 genimg = gen_images.numpy()
+                if hvd.rank() == 0:
+                    print("gen_imgs max:" , max(genimg))
                 genimg = inpimg - 2 * genimg
                 
                 inpimg = inpimg[0,:,:,:]
@@ -376,7 +378,9 @@ def test():
         out = generator(inp, training = False)
         out = np.asarray(out)
         out = out[0,:,:,:]
+        print(out)
         out = x - 2 * out
+        print(out)
         heatmapexp = heatmap(x, y)
         heatmapres = heatmap(x, out)    
         y = Image.fromarray(((y/2 + 0.5)*255).astype(np.uint8))
