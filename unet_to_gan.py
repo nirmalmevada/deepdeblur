@@ -304,7 +304,7 @@ def train():
                 expimg = y_batch.numpy()
                 genimg = gen_images.numpy()
                 if hvd.rank() == 0:
-                    print("gen_imgs max:" , np.amax(genimg))
+                    print("gen_imgs max:" , np.max(genimg))
                 genimg = inpimg - 2 * genimg
                 
                 inpimg = inpimg[0,:,:,:]
