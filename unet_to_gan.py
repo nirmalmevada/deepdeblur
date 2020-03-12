@@ -265,9 +265,7 @@ def heatmapwithoutabs(image1, image2):
     image1 = image1[0,:,:,:]
     image2 = image2[0,:,:,:]
     finalimage = np.zeros((image1.shape))
-    finalimage[:,:,0] = image1[:,:,0] - image2[:,:,0]
-    finalimage[:,:,1] = image1[:,:,1] - image2[:,:,1]
-    finalimage[:,:,2] = image1[:,:,2] - image2[:,:,2]
+    finalimage = image1 - image2
     finalimage = finalimage / 2
     finalimage = tf.convert_to_tensor(finalimage, dtype=tf.float32)
     finalimage = tf.expand_dims(finalimage, 0)
@@ -292,21 +290,18 @@ def train():
                 
                 gen_images = generator(x_batch, training = True)
                 
-                hmapxy = heatmapwithoutabs(x_batch, y_batch)
-                real_output = discriminator([x_batch, hmapxy], training = True)
+                #hmapxy = heatmapwithoutabs(x_batch, y_batch)
+                real_output = discriminator([x_batch, y_batch], training = True)
                 fake_output = discriminator([x_batch, gen_images], training = True)
                 
                 dis_r_loss, dis_f_loss = discriminator_loss(real_output, fake_output)
                 dis_loss = dis_r_loss + dis_f_loss
-                L1, L2, gen_loss = generator_loss(gen_images, hmapxy, dis_f_loss)
+                L1, L2, gen_loss = generator_loss(gen_images, y_batch, dis_f_loss)
                 
                 inpimg = x_batch.numpy()
                 expimg = y_batch.numpy()
                 genimg = gen_images.numpy()
 
-                genimg = inpimg - 2 * genimg
-                if hvd.rank() == 0:
-                    print("gen_imgs: " , np.max(genimg), np.min(genimg))
                 inpimg = inpimg[0,:,:,:]
                 expimg = expimg[0,:,:,:]
                 genimg = genimg[0,:,:,:]
@@ -355,9 +350,7 @@ def heatmap(image1, image2):
     image1 = (image1 / 2 + 0.5) * 255
     image2 = (image2 / 2 + 0.5) * 255    
     finalimage = np.zeros((image1.shape))
-    finalimage[:,:,0] = abs(image1[:,:,0] - image2[:,:,0])
-    finalimage[:,:,1] = abs(image1[:,:,1] - image2[:,:,1])
-    finalimage[:,:,2] = abs(image1[:,:,2] - image2[:,:,2])
+    finalimage = abs(image1 - image2)
     return finalimage
 
 def test():
@@ -378,9 +371,6 @@ def test():
         out = generator(inp, training = False)
         out = np.asarray(out)
         out = out[0,:,:,:]
-        print("b:out ", np.min(out), np.max(out))
-        out = x - 2 * out
-        print("after: ", np.min(out), np.max(out))
         heatmapexp = heatmap(x, y)
         heatmapres = heatmap(x, out)    
         y = Image.fromarray(((y/2 + 0.5)*255).astype(np.uint8))
