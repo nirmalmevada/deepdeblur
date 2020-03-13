@@ -131,19 +131,19 @@ def generator_model():
     #denseblock1 6
     d1 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(c1)
     d1 = layers.Activation('relu')(d1)
-    d1 = dense_block(d1, 6)
+    d1 = dense_block(d1, 3)
     d1 = transition_block(d1, 0.5)
 
     #densblock2 12
-    d2 = dense_block(d1, 12)
+    d2 = dense_block(d1, 6)
     d2 = transition_block(d2, 0.5)
 
     #denseblock3 24
-    d3 = dense_block(d2, 16)
+    d3 = dense_block(d2, 12)
     d3 = transition_block(d3, 0.5)
     
     #denseblock4 16
-    d4 = dense_block(d3, 24)
+    d4 = dense_block(d3, 16)
     d4 = transition_block(d4, 0.5)
     d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
     d4 = layers.Activation('relu')(d4)
