@@ -130,7 +130,7 @@ def generator_model():
     
     #denseblock1 6
     d1 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(c1)
-    d1 = layers.LeakyReLU(d1)
+    d1 = layers.LeakyReLU()(d1)
     d1 = dense_block(d1, 3)
     d1 = transition_block(d1, 0.5)
 
@@ -146,7 +146,7 @@ def generator_model():
     d4 = dense_block(d3, 16)
     d4 = transition_block(d4, 0.5)
     d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
-    d4 = layers.LeakyReLU(d4)
+    d4 = layers.LeakyReLU()(d4)
     
     #Self Attention Part
     c5 = attention(d4)
