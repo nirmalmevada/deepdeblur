@@ -63,17 +63,17 @@ def dense_block(input_tensor, blocks):
 
 def conv_block(input_tensor, growth_rate):
     x1 = layers.BatchNormalization(3, epsilon = 1.001e-5)(input_tensor)
-    x1 = layers.Activation('relu')(x1)
+    x1 = layers.LeakyReLU()(x1)
     x1 = layers.Conv2D(4 * growth_rate, 1, use_bias = False)(x1)
     x1 = layers.BatchNormalization(3, epsilon = 1.001e-5)(x1)
-    x1 = layers.Activation('relu')(x1)
+    x1 = layers.LeakyReLU()(x1)
     x1 = layers.Conv2D(growth_rate, 3, padding = 'same', use_bias = False)(x1)
     input_tensor = layers.Concatenate(axis = 3)([input_tensor, x1])
     return input_tensor
     
 def transition_block(input_tensor, reduction):
     x = layers.BatchNormalization(3, epsilon = 1.001e-5)(input_tensor)
-    x = layers.Activation('relu')(x)
+    x = layers.LeakyReLU()(x)
     x = layers.Conv2D(int(tf.keras.backend.int_shape(x)[3] * reduction), 1, use_bias = False)(x)
     x = layers.AveragePooling2D(2, strides = 2)(x)
     return x
@@ -130,7 +130,7 @@ def generator_model():
     
     #denseblock1 6
     d1 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(c1)
-    d1 = layers.Activation('relu')(d1)
+    d1 = layers.LeakyReLU(d1)
     d1 = dense_block(d1, 3)
     d1 = transition_block(d1, 0.5)
 
@@ -146,7 +146,7 @@ def generator_model():
     d4 = dense_block(d3, 16)
     d4 = transition_block(d4, 0.5)
     d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
-    d4 = layers.Activation('relu')(d4)
+    d4 = layers.LeakyReLU(d4)
     
     #Self Attention Part
     c5 = attention(d4)
