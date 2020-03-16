@@ -34,13 +34,19 @@ if gpus:
 
 BATCH_SIZE = 1
 EPOCHS = 3
+Lambda1 = 1
+Lambda2 = 1
+Lambda3 = 1
 
 def build_parser():
     parser = ArgumentParser()
     parser.add_argument("-e", "--epochs", type = int, dest = 'epochs', help = "Number of epochs", default = EPOCHS)
+    parser.add_argument("-l1", type = int, dest = 'lambda1', help = "L1 loss factor", default = Lambda1)
+    parser.add_argument("-l2", type = int, dest = 'lambda2', help = "L2 loss factor", default = Lambda2)
+    parser.add_argument("-l3", type = int, dest = 'lambda3', help = "L3 loss factor", default = Lambda3)
     return parser
 
-def hw_flatten(x) :
+def hw_flatten(x):
     return tf.reshape(x, shape=[1, -1 ,x.shape[-1]])
 		
 def attention(x):
@@ -60,10 +66,10 @@ def generator_model():
     model_in = layers.Input((720, 1280, 3))
     
     #space to depth
-    s2d = tf.nn.space_to_depth(model_in, 2, data_format='NHWC')
+    #s2d = tf.nn.space_to_depth(model_in, 2, data_format='NHWC')
     
     #down
-    c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(s2d)
+    c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(model_in)
     c1 = layers.BatchNormalization()(c1)
     c1 = layers.LeakyReLU()(c1)
     c1 = layers.Conv2D(16, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c1)
@@ -110,8 +116,6 @@ def generator_model():
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.LeakyReLU()(c5)
 
-    # Removed noise to check
-    
     #Self Attention Part
     c5 = attention(c5)
     noise = tf.random.normal(tf.shape(c5))
@@ -120,9 +124,9 @@ def generator_model():
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
     #padding to match 44 -> 45
-    padded = layers.ZeroPadding2D(padding = ((1,0),(0,0)))(u6)
+    #padded = layers.ZeroPadding2D(padding = ((1,0),(0,0)))(u6)
     
-    u6 = layers.concatenate([padded, c4])
+    u6 = layers.concatenate([u6, c4])
     u6 = layers.Dropout(0.1)(u6)
     c6 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u6)
     c6 = layers.BatchNormalization()(c6)
@@ -162,30 +166,30 @@ def generator_model():
     c9 = layers.LeakyReLU()(c9)
     
     #depthtospace
-    d2s = tf.nn.depth_to_space(c9, 2, data_format='NHWC')
+    #d2s = tf.nn.depth_to_space(c9, 2, data_format='NHWC')
     
     #concat and multiscale upsample downsample
-    d2s = layers.concatenate([d2s, model_in])
+    #d2s = layers.concatenate([d2s, model_in])
     
-    d2s = layers.Conv2D(3, (1,1), kernel_initializer = 'he_normal', padding = 'same')(d2s)
-    d2s = layers.BatchNormalization()(d2s)
-    d2s = layers.LeakyReLU()(d2s)
+    # d2s = layers.Conv2D(3, (1,1), kernel_initializer = 'he_normal', padding = 'same')(d2s)
+    # d2s = layers.BatchNormalization()(d2s)
+    # d2s = layers.LeakyReLU()(d2s)
     
     #maxpool 2 x 4 x 8 x 16 layers
-    max1 = layers.MaxPooling2D((2,2), padding = 'valid')(d2s)
-    max2 = layers.MaxPooling2D((4,4), padding = 'valid')(d2s)
-    max3 = layers.MaxPooling2D((8,8), padding = 'valid')(d2s)
-    max4 = layers.MaxPooling2D((16,16), padding = 'valid')(d2s) 
+    # max1 = layers.MaxPooling2D((2,2), padding = 'valid')(d2s)
+    # max2 = layers.MaxPooling2D((4,4), padding = 'valid')(d2s)
+    # max3 = layers.MaxPooling2D((8,8), padding = 'valid')(d2s)
+    # max4 = layers.MaxPooling2D((16,16), padding = 'valid')(d2s) 
     
     #upsample
-    up1 = layers.UpSampling2D((2,2), interpolation = 'nearest')(max1)
-    up2 = layers.UpSampling2D((4,4), interpolation = 'nearest')(max2)
-    up3 = layers.UpSampling2D((8,8), interpolation = 'nearest')(max3)
-    up4 = layers.UpSampling2D((16,16), interpolation = 'nearest')(max4)
+    # up1 = layers.UpSampling2D((2,2), interpolation = 'nearest')(max1)
+    # up2 = layers.UpSampling2D((4,4), interpolation = 'nearest')(max2)
+    # up3 = layers.UpSampling2D((8,8), interpolation = 'nearest')(max3)
+    # up4 = layers.UpSampling2D((16,16), interpolation = 'nearest')(max4)
     
-    concatpool = layers.concatenate([up1, up2, up3, up4])
+    # concatpool = layers.concatenate([up1, up2, up3, up4])
 
-    model_out = layers.Conv2DTranspose(3, (1,1), activation = 'tanh')(concatpool)
+    model_out = layers.Conv2DTranspose(3, (1,1), activation = 'tanh')(c9)
     model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
     return model
     
@@ -249,15 +253,12 @@ l2_loss = tf.keras.losses.MeanSquaredError()
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
 def discriminator_loss(real_output , generated_output):
-    real_loss = cross_entropy( (np.random.random((real_output.shape))*0.1 + 0.9) * tf.ones_like(real_output), real_output)
-    fake_loss = cross_entropy( (np.random.random((generated_output.shape))*0.1) * tf.zeros_like(generated_output), generated_output)
+    real_loss = cross_entropy( (np.random.random((real_output.shape))*0.3 + 0.7) * tf.ones_like(real_output), real_output)
+    fake_loss = cross_entropy( (np.random.random((generated_output.shape))*0.3) * tf.zeros_like(generated_output), generated_output)
     return real_loss, fake_loss
 
 def generator_loss(fake, sharp, dis_f_loss):
-    lam1 = 2
-    lam2 = 0.5
-    lam3 = 1
-    return l1_loss(fake, sharp), l2_loss(fake, sharp), lam1 * l1_loss(fake, sharp) + lam2 * l2_loss(fake, sharp) + lam3 * dis_f_loss
+    return l1_loss(fake, sharp), l2_loss(fake, sharp), Lambda1 * l1_loss(fake, sharp) + Lambda2 * l2_loss(fake, sharp) + Lambda3 * dis_f_loss
 
 def heatmapwithoutabs(image1, image2):
     image1 = np.asarray(image1)
@@ -388,8 +389,12 @@ def test():
 parser = build_parser()
 options = parser.parse_args()
 EPOCHS = options.epochs
+Lambda1 = options.lambda1
+Lambda2 = options.lambda2
+Lambda3 = options.lambda3
 
 print("Epochs are: ", EPOCHS)
+print("Factors are: ", Lambda1, Lambda2, Lambda3)
 train_dataset = load_data(BATCH_SIZE)
 log_array = []
 
