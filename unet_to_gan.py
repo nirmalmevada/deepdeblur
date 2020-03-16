@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import glob
 import zipfile
 import PIL
-import horovod.tensorflow as hvd
+# import horovod.tensorflow as hvd
 
 from random import random
 from argparse import ArgumentParser
@@ -15,16 +15,16 @@ from random import random
 from tensorflow.keras import layers
 
 
-hvd.init()
+# hvd.init()
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-print("Gpu's for horovod: ")
-print(gpus)
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# print("Gpu's for horovod: ")
+# print(gpus)
 
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
-if gpus:
-    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+# for gpu in gpus:
+    # tf.config.experimental.set_memory_growth(gpu, True)
+# if gpus:
+    # tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     
 #toprintlogs
 #tf.debugging.set_log_device_placement(True)
@@ -118,8 +118,8 @@ def generator_model():
 
     #Self Attention Part
     c5 = attention(c5)
-    noise = tf.random.normal(tf.shape(c5))
-    c5 = layers.concatenate([c5, noise])
+    # noise = tf.random.normal(tf.shape(c5))
+    # c5 = layers.concatenate([c5, noise])
 
     #up
     u6 = layers.Conv2DTranspose(128, (2, 2), strides = (2,2), padding = 'same')(c5)
@@ -169,27 +169,28 @@ def generator_model():
     #d2s = tf.nn.depth_to_space(c9, 2, data_format='NHWC')
     
     #concat and multiscale upsample downsample
-    #d2s = layers.concatenate([d2s, model_in])
-    
-    # d2s = layers.Conv2D(3, (1,1), kernel_initializer = 'he_normal', padding = 'same')(d2s)
-    # d2s = layers.BatchNormalization()(d2s)
-    # d2s = layers.LeakyReLU()(d2s)
+    d2s = layers.concatenate([c9, model_in])
+    d2s = layers.Conv2D(3, (1,1), kernel_initializer = 'he_normal', padding = 'same')(d2s)
+    d2s = layers.BatchNormalization()(d2s)
+    d2s = layers.LeakyReLU()(d2s)
     
     #maxpool 2 x 4 x 8 x 16 layers
-    # max1 = layers.MaxPooling2D((2,2), padding = 'valid')(d2s)
-    # max2 = layers.MaxPooling2D((4,4), padding = 'valid')(d2s)
-    # max3 = layers.MaxPooling2D((8,8), padding = 'valid')(d2s)
-    # max4 = layers.MaxPooling2D((16,16), padding = 'valid')(d2s) 
-    
-    #upsample
-    # up1 = layers.UpSampling2D((2,2), interpolation = 'nearest')(max1)
-    # up2 = layers.UpSampling2D((4,4), interpolation = 'nearest')(max2)
-    # up3 = layers.UpSampling2D((8,8), interpolation = 'nearest')(max3)
-    # up4 = layers.UpSampling2D((16,16), interpolation = 'nearest')(max4)
-    
-    # concatpool = layers.concatenate([up1, up2, up3, up4])
+    max1 = layers.MaxPooling2D((2,2), padding = 'valid')(d2s)
+    max2 = layers.MaxPooling2D((4,4), padding = 'valid')(d2s)
+    max3 = layers.MaxPooling2D((8,8), padding = 'valid')(d2s)
+    max4 = layers.MaxPooling2D((16,16), padding = 'valid')(d2s) 
 
-    model_out = layers.Conv2D(3, (1,1), activation = 'tanh')(c9)
+    #upsample
+    up1 = layers.UpSampling2D((2,2), interpolation = 'nearest')(max1)
+    up2 = layers.UpSampling2D((4,4), interpolation = 'nearest')(max2)
+    up3 = layers.UpSampling2D((8,8), interpolation = 'nearest')(max3)
+    up4 = layers.UpSampling2D((16,16), interpolation = 'nearest')(max4)
+    
+    concatpool = layers.concatenate([up1, up2, up3, up4, d2s])
+
+    u10 = layers.Conv2DTranspose(6, (1,1), kernel_initializer = 'he_normal')(concatpool)
+    u10 = layers.LeakyReLU()(u10)
+    model_out = layers.Conv2DTranspose(3, (1,1), activation = 'tanh')(u10)
     model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
     return model
     
@@ -405,16 +406,16 @@ discriminator = discriminator_model()
 generator.summary()
 discriminator.summary()
 
-checkpoint_dir = './tmp/training_checkpoints'
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
-                                discriminator_optimizer=discriminator_optimizer, 
-                                generator=generator,
-                                discriminator=discriminator)
+# checkpoint_dir = './tmp/training_checkpoints'
+# checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+# checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
+                                # discriminator_optimizer=discriminator_optimizer, 
+                                # generator=generator,
+                                # discriminator=discriminator)
 
-load_checkpoint()
-train()
-if hvd.rank() == 0:
-    test()
-suffix = int(random()*10000)
-np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
+# load_checkpoint()
+# train()
+# if hvd.rank() == 0:
+    # test()
+# suffix = int(random()*10000)
+# np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
