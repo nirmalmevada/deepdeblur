@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import glob
 import zipfile
 import PIL
-# import horovod.tensorflow as hvd
+import horovod.tensorflow as hvd
 
 from random import random
 from argparse import ArgumentParser
@@ -15,16 +15,16 @@ from random import random
 from tensorflow.keras import layers
 
 
-# hvd.init()
+hvd.init()
 
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# print("Gpu's for horovod: ")
-# print(gpus)
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print("Gpu's for horovod: ")
+print(gpus)
 
-# for gpu in gpus:
-    # tf.config.experimental.set_memory_growth(gpu, True)
-# if gpus:
-    # tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+if gpus:
+    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     
 #toprintlogs
 #tf.debugging.set_log_device_placement(True)
@@ -406,16 +406,16 @@ discriminator = discriminator_model()
 generator.summary()
 discriminator.summary()
 
-# checkpoint_dir = './tmp/training_checkpoints'
-# checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-# checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
-                                # discriminator_optimizer=discriminator_optimizer, 
-                                # generator=generator,
-                                # discriminator=discriminator)
+checkpoint_dir = './tmp/training_checkpoints'
+checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
+                                discriminator_optimizer=discriminator_optimizer, 
+                                generator=generator,
+                                discriminator=discriminator)
 
-# load_checkpoint()
-# train()
-# if hvd.rank() == 0:
-    # test()
-# suffix = int(random()*10000)
-# np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
+load_checkpoint()
+train()
+if hvd.rank() == 0:
+    test()
+suffix = int(random()*10000)
+np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
