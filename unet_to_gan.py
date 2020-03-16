@@ -189,7 +189,7 @@ def generator_model():
     
     # concatpool = layers.concatenate([up1, up2, up3, up4])
 
-    model_out = layers.Conv2DTranspose(3, (1,1), activation = 'tanh')(c9)
+    model_out = layers.Conv2D(3, (1,1), activation = 'tanh')(c9)
     model = tf.keras.Model(inputs = [model_in], outputs = [model_out])
     return model
     
