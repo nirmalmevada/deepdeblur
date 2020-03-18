@@ -286,7 +286,7 @@ def generator_model():
     # p4 = layers.MaxPooling2D((2,2))(c4)
     # p4 = layers.Dropout(0.1)(p4)
     
-    d3 = dense_block(d2, 12)
+    d3 = dense_block(d2, 9)
     d3 = transition_block(d3, 0.5)
 
     # c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
@@ -296,7 +296,7 @@ def generator_model():
     # c5 = layers.BatchNormalization()(c5)
     # c5 = layers.LeakyReLU()(c5)
     
-    d4 = dense_block(d3, 16)
+    d4 = dense_block(d3, 12)
     d4 = transition_block(d4, 0.5)
     d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
     d4 = layers.LeakyReLU()(d4)
