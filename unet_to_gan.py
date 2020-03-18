@@ -129,12 +129,12 @@ class DeformableConv2D(object):
             self.offset_conv = layers.SeparableConv2D(filters=filters * 2, kernel_size=(3, 3), padding='same',
                                                    use_bias=False)
             self.weight_conv = layers.SeparableConv2D(filters=filters, kernel_size=(3, 3), padding="same",
-                                                   use_bias=False, activation=tf.nn.sigmoid)
+                                                   use_bias=False, activation=tf.nn.leaky_relu)
         else:
             self.offset_conv = layers.Conv2D(filters=filters*2, kernel_size=(3, 3), padding='same',
                                                    use_bias=False)
             self.weight_conv = layers.Conv2D(filters=filters, kernel_size=(3, 3), padding="same",
-                                                   use_bias=False, activation=tf.nn.sigmoid)
+                                                   use_bias=False, activation=tf.nn.leaky_relu)
 
     def __call__(self, x):
         offsets = self.offset_conv(x)
