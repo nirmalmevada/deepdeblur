@@ -293,7 +293,7 @@ def generator_model():
     u8 = layers.Conv2DTranspose(32, (2, 2), strides = (2,2), padding = 'same')(c7)
     u8 = layers.concatenate([u8, c2])
     u8 = layers.Dropout(0.1)(u8)
-    c8 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u8)
+    c8 = DeformableConv2D(64)(u8)
     c8 = layers.BatchNormalization()(c8)
     c8 = layers.LeakyReLU()(c8)
     c8 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c8)
@@ -471,8 +471,8 @@ def train():
                 ssim_exp = tf.image.ssim(inpimg, expimg, max_val = 255).numpy()[0]
                 ssim_res = tf.image.ssim(inpimg, genimg, max_val = 255).numpy()[0]
             
-            gen_distape = hvd.DistributedGradientTape(gen)
-            dis_distape = hvd.DistributedGradientTape(dis)
+            gen_distape = hvd.DistributedGradientTape(gen, compression = hvd.Compression.fp16)
+            dis_distape = hvd.DistributedGradientTape(dis, compression = hvd.Compression.fp16)
             gen_gradients = gen_distape.gradient(gen_loss, generator.trainable_variables)
             dis_gradients = dis_distape.gradient(dis_loss, discriminator.trainable_variables)
             
