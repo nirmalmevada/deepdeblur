@@ -283,7 +283,7 @@ def generator_model():
     u7 = layers.Conv2DTranspose(64, (2, 2), strides = (2,2), padding = 'same')(c6)
     u7 = layers.concatenate([u7, c3])
     u7 = layers.Dropout(0.1)(u7)
-    c7 = DeformableConv2D(128)(u7)
+    c7 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(u7)
     c7 = layers.BatchNormalization()(c7)
     c7 = layers.LeakyReLU()(c7)
     c7 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c7)
