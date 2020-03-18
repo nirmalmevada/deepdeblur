@@ -138,15 +138,15 @@ class DeformableConv2D(object):
 
     def __call__(self, x):
         offsets = self.offset_conv(x)
-        print("offsets: ", offsets.shape)
+        # print("offsets: ", offsets.shape)
         weights = self.weight_conv(x)
-        print("weights: ", weights.shape)
+        # print("weights: ", weights.shape)
         x_shape = tf.keras.backend.int_shape(x)
-        print("x: ", x.shape)
+        # print("x: ", x.shape)
         x_shape_list = x.get_shape().as_list()
         x = self._to_bc_h_w(x, x_shape)
         offsets = self._to_bc_h_w_2(offsets, x_shape)
-        print("offsets: ", offsets.shape)
+        # print("offsets: ", offsets.shape)
         
         
         weights = self._to_bc_h_w(weights, x_shape)
@@ -207,6 +207,28 @@ def attention(x):
 	final = gamma * o + x
 	return final
 
+def dense_block(input_tensor, blocks):
+    for i in range(blocks):
+        input_tensor = conv_block(input_tensor, 32)
+    return input_tensor
+
+def conv_block(input_tensor, growth_rate):
+    x1 = layers.BatchNormalization(3, epsilon = 1.001e-5)(input_tensor)
+    x1 = layers.LeakyReLU()(x1)
+    x1 = layers.Conv2D(4 * growth_rate, 1, use_bias = False)(x1)
+    x1 = layers.BatchNormalization(3, epsilon = 1.001e-5)(x1)
+    x1 = layers.LeakyReLU()(x1)
+    x1 = layers.Conv2D(growth_rate, 3, padding = 'same', use_bias = False)(x1)
+    input_tensor = layers.Concatenate(axis = 3)([input_tensor, x1])
+    return input_tensor
+    
+def transition_block(input_tensor, reduction):
+    x = layers.BatchNormalization(3, epsilon = 1.001e-5)(input_tensor)
+    x = layers.LeakyReLU()(x)
+    x = layers.Conv2D(int(tf.keras.backend.int_shape(x)[3] * reduction), 1, use_bias = False)(x)
+    x = layers.AveragePooling2D(2, strides = 2)(x)
+    return x
+
 def generator_model():
     model_in = layers.Input((720, 1280, 3))
     
@@ -224,45 +246,63 @@ def generator_model():
     p1 = layers.MaxPooling2D((2,2))(c1)
     p1 = layers.Dropout(0.1)(p1)
 
-    c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p1)
-    c2 = layers.BatchNormalization()(c2)
-    c2 = layers.LeakyReLU()(c2)
-    c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c2)
-    c2 = layers.BatchNormalization()(c2)
-    c2 = layers.LeakyReLU()(c2)
+    # c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p1)
+    # c2 = layers.BatchNormalization()(c2)
+    # c2 = layers.LeakyReLU()(c2)
+    # c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c2)
+    # c2 = layers.BatchNormalization()(c2)
+    # c2 = layers.LeakyReLU()(c2)
 
-    p2 = layers.MaxPooling2D((2,2))(c2)
-    p2 = layers.Dropout(0.1)(p2)
+    # p2 = layers.MaxPooling2D((2,2))(c2)
+    # p2 = layers.Dropout(0.1)(p2)
+    
+    d1 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(c1)
+    d1 = layers.LeakyReLU()(d1)
+    d1 = dense_block(d1, 3)
+    d1 = transition_block(d1, 0.5)
+    
 
-    c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p2)
-    c3 = layers.BatchNormalization()(c3)
-    c3 = layers.LeakyReLU()(c3)
-    c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c3)
-    c3 = layers.BatchNormalization()(c3)
-    c3 = layers.LeakyReLU()(c3)
+    # c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p2)
+    # c3 = layers.BatchNormalization()(c3)
+    # c3 = layers.LeakyReLU()(c3)
+    # c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c3)
+    # c3 = layers.BatchNormalization()(c3)
+    # c3 = layers.LeakyReLU()(c3)
 
-    p3 = layers.MaxPooling2D((2,2))(c3)
-    p3 = layers.Dropout(0.1)(p3)
+    # p3 = layers.MaxPooling2D((2,2))(c3)
+    # p3 = layers.Dropout(0.1)(p3)
+    
+    d2 = dense_block(d1, 6)
+    d2 = transition_block(d2, 0.5)
+    
 
-    c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p3)
-    c4 = layers.BatchNormalization()(c4)
-    c4 = layers.LeakyReLU()(c4)
-    c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c4)
-    c4 = layers.BatchNormalization()(c4)
-    c4 = layers.LeakyReLU()(c4)
+    # c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p3)
+    # c4 = layers.BatchNormalization()(c4)
+    # c4 = layers.LeakyReLU()(c4)
+    # c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c4)
+    # c4 = layers.BatchNormalization()(c4)
+    # c4 = layers.LeakyReLU()(c4)
 
-    p4 = layers.MaxPooling2D((2,2))(c4)
-    p4 = layers.Dropout(0.1)(p4)
+    # p4 = layers.MaxPooling2D((2,2))(c4)
+    # p4 = layers.Dropout(0.1)(p4)
+    
+    d3 = dense_block(d2, 12)
+    d3 = transition_block(d3, 0.5)
 
-    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
-    c5 = layers.BatchNormalization()(c5)
-    c5 = layers.LeakyReLU()(c5)
-    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
-    c5 = layers.BatchNormalization()(c5)
-    c5 = layers.LeakyReLU()(c5)
+    # c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
+    # c5 = layers.BatchNormalization()(c5)
+    # c5 = layers.LeakyReLU()(c5)
+    # c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
+    # c5 = layers.BatchNormalization()(c5)
+    # c5 = layers.LeakyReLU()(c5)
+    
+    d4 = dense_block(d3, 16)
+    d4 = transition_block(d4, 0.5)
+    d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
+    d4 = layers.LeakyReLU()(d4)
 
     #Self Attention Part
-    c5 = attention(c5)
+    c5 = attention(d4)
     # noise = tf.random.normal(tf.shape(c5))
     # c5 = layers.concatenate([c5, noise])
 
@@ -271,7 +311,7 @@ def generator_model():
     #padding to match 44 -> 45
     #padded = layers.ZeroPadding2D(padding = ((1,0),(0,0)))(u6)
     
-    u6 = layers.concatenate([u6, c4])
+    u6 = layers.concatenate([u6, d3])
     u6 = layers.Dropout(0.1)(u6)
     c6 = DeformableConv2D(256)(u6)
     c6 = layers.BatchNormalization()(c6)
@@ -281,7 +321,7 @@ def generator_model():
     c6 = layers.LeakyReLU()(c6) 
 
     u7 = layers.Conv2DTranspose(64, (2, 2), strides = (2,2), padding = 'same')(c6)
-    u7 = layers.concatenate([u7, c3])
+    u7 = layers.concatenate([u7, d2])
     u7 = layers.Dropout(0.1)(u7)
     c7 = DeformableConv2D(128)(u7)
     c7 = layers.BatchNormalization()(c7)
@@ -291,7 +331,7 @@ def generator_model():
     c7 = layers.LeakyReLU()(c7) 
 
     u8 = layers.Conv2DTranspose(32, (2, 2), strides = (2,2), padding = 'same')(c7)
-    u8 = layers.concatenate([u8, c2])
+    u8 = layers.concatenate([u8, d1])
     u8 = layers.Dropout(0.1)(u8)
     c8 = DeformableConv2D(64)(u8)
     c8 = layers.BatchNormalization()(c8)
