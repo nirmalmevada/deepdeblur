@@ -246,6 +246,8 @@ def generator_model():
     p1 = layers.MaxPooling2D((2,2))(c1)
     p1 = layers.Dropout(0.1)(p1)
 
+    #############################################################################################
+
     # c2 = layers.Conv2D(32, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p1)
     # c2 = layers.BatchNormalization()(c2)
     # c2 = layers.LeakyReLU()(c2)
@@ -261,6 +263,8 @@ def generator_model():
     d1 = dense_block(d1, 3)
     d1 = transition_block(d1, 0.5)
     
+    #############################################################################################
+
 
     # c3 = layers.Conv2D(64, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p2)
     # c3 = layers.BatchNormalization()(c3)
@@ -274,7 +278,9 @@ def generator_model():
     
     d2 = dense_block(d1, 6)
     d2 = transition_block(d2, 0.5)
-    
+ 
+    #############################################################################################
+ 
 
     # c4 = layers.Conv2D(128, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p3)
     # c4 = layers.BatchNormalization()(c4)
@@ -289,17 +295,21 @@ def generator_model():
     d3 = dense_block(d2, 9)
     d3 = transition_block(d3, 0.5)
 
-    # c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(p4)
-    # c5 = layers.BatchNormalization()(c5)
-    # c5 = layers.LeakyReLU()(c5)
-    # c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
-    # c5 = layers.BatchNormalization()(c5)
-    # c5 = layers.LeakyReLU()(c5)
+    #############################################################################################
+
+    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(d3)
+    c5 = layers.BatchNormalization()(c5)
+    c5 = layers.LeakyReLU()(c5)
+    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
+    c5 = layers.BatchNormalization()(c5)
+    c5 = layers.LeakyReLU()(c5)
     
-    d4 = dense_block(d3, 12)
-    d4 = transition_block(d4, 0.5)
-    d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
-    d4 = layers.LeakyReLU()(d4)
+    # d4 = dense_block(d3, 12)
+    # d4 = transition_block(d4, 0.5)
+    # d4 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(d4)
+    # d4 = layers.LeakyReLU()(d4)
+
+    #############################################################################################
 
     #Self Attention Part
     c5 = attention(d4)
