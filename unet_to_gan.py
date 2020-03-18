@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import glob
 import zipfile
 import PIL
-import horovod.tensorflow as hvd
+# import horovod.tensorflow as hvd
 
 from random import random
 from argparse import ArgumentParser
@@ -15,16 +15,16 @@ from random import random
 from tensorflow.keras import layers
 
 
-hvd.init()
+# hvd.init()
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-print("Gpu's for horovod: ")
-print(gpus)
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# print("Gpu's for horovod: ")
+# print(gpus)
 
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
-if gpus:
-    tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+# for gpu in gpus:
+    # tf.config.experimental.set_memory_growth(gpu, True)
+# if gpus:
+    # tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
     
 #toprintlogs
 #tf.debugging.set_log_device_placement(True)
@@ -258,10 +258,10 @@ def generator_model():
     # p2 = layers.MaxPooling2D((2,2))(c2)
     # p2 = layers.Dropout(0.1)(p2)
     
-    d1 = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(c1)
-    d1 = layers.LeakyReLU()(d1)
-    d1 = dense_block(d1, 3)
-    d1 = transition_block(d1, 0.5)
+    d = layers.BatchNormalization(axis = 3, epsilon = 1.001e-5)(p1)
+    d = layers.LeakyReLU()(d)
+    d1 = dense_block(d, 3)
+    d = transition_block(d1, 0.5)
     
     #############################################################################################
 
@@ -276,8 +276,8 @@ def generator_model():
     # p3 = layers.MaxPooling2D((2,2))(c3)
     # p3 = layers.Dropout(0.1)(p3)
     
-    d2 = dense_block(d1, 6)
-    d2 = transition_block(d2, 0.5)
+    d2 = dense_block(d, 6)
+    d = transition_block(d2, 0.5)
  
     #############################################################################################
  
@@ -292,12 +292,12 @@ def generator_model():
     # p4 = layers.MaxPooling2D((2,2))(c4)
     # p4 = layers.Dropout(0.1)(p4)
     
-    d3 = dense_block(d2, 9)
-    d3 = transition_block(d3, 0.5)
+    d3 = dense_block(d, 9)
+    d = transition_block(d3, 0.5)
 
     #############################################################################################
 
-    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(d3)
+    c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(d)
     c5 = layers.BatchNormalization()(c5)
     c5 = layers.LeakyReLU()(c5)
     c5 = layers.Conv2D(256, (3, 3), kernel_initializer = 'he_normal', padding = 'same')(c5)
@@ -601,16 +601,16 @@ discriminator = discriminator_model()
 generator.summary()
 discriminator.summary()
 
-checkpoint_dir = './tmp/training_checkpoints'
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
-                                discriminator_optimizer=discriminator_optimizer, 
-                                generator=generator,
-                                discriminator=discriminator)
+# checkpoint_dir = './tmp/training_checkpoints'
+# checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+# checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
+                                # discriminator_optimizer=discriminator_optimizer, 
+                                # generator=generator,
+                                # discriminator=discriminator)
 
-load_checkpoint()
-train()
-if hvd.rank() == 0:
-    test()
-suffix = int(random()*10000)
-np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
+# load_checkpoint()
+# train()
+# if hvd.rank() == 0:
+    # test()
+# suffix = int(random()*10000)
+# np.save('./tmp/log_array_'+str(suffix)+'.npy', log_array)
