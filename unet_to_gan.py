@@ -312,7 +312,7 @@ def generator_model():
     #############################################################################################
 
     #Self Attention Part
-    c5 = attention(d4)
+    c5 = attention(c5)
     # noise = tf.random.normal(tf.shape(c5))
     # c5 = layers.concatenate([c5, noise])
 
